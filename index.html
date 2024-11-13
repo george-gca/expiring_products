@@ -32,7 +32,6 @@
   />
 </head>
 
-<!-- TODO: add tabs https://getbootstrap.com/docs/5.3/components/navs-tabs/#tabs -->
 <!-- https://fastbootstrap.com/docs/margin/-->
 <body class="m-4">
   <h1>Produtos a vencer</h1>
@@ -41,7 +40,7 @@
       <button class="nav-link active" id="foods-tab" data-bs-toggle="tab" data-bs-target="#foods-tab-pane" type="button" role="tab" aria-controls="foods-tab-pane" aria-selected="true">Alimentos</button>
     </li>
     <li class="nav-item" role="presentation">
-      <button class="nav-link" id="medicines-tab" data-bs-toggle="tab" data-bs-target="#medicines-tab-pane" type="button" role="tab" aria-controls="medicines-tab-pane" aria-selected="false">Remédios</button>
+      <button class="nav-link" id="medicines-tab" data-bs-toggle="tab" data-bs-target="#medicines-tab-pane" type="button" role="tab" aria-controls="medicines-tab-pane" aria-selected="false">Medicamentos</button>
     </li>
     <li class="nav-item" role="presentation">
       <button class="nav-link" id="options-tab" data-bs-toggle="tab" data-bs-target="#options-tab-pane" type="button" role="tab" aria-controls="options-tab-pane" aria-selected="false">Opções</button>
@@ -50,7 +49,7 @@
 
   <div class="tab-content" id="tabsContents">
     <div class="tab-pane fade show active" id="foods-tab-pane" role="tabpanel" aria-labelledby="foods-tab" tabindex="0">
-      <ul class="list-group list-group-flush list-unstyled" id="foods-list"></ul>
+      <ul class="list-group list-group-flush list-unstyled mt-3" id="foods-list"></ul>
       <!-- Floating add item button -->
       <div class="fixed-action-btn" style="height: 80px;">
         <button class="btn btn-floating text-white btn-lg" style="background-color: #f44336;" data-bs-toggle="modal" data-bs-target="#add-item-modal">
@@ -59,7 +58,7 @@
       </div>
     </div>
     <div class="tab-pane fade" id="medicines-tab-pane" role="tabpanel" aria-labelledby="medicines-tab" tabindex="1">
-      <ul class="list-group list-group-flush list-unstyled" id="medicines-list"></ul>
+      <ul class="list-group list-group-flush list-unstyled mt-3" id="medicines-list"></ul>
       <!-- Floating add item button -->
       <div class="fixed-action-btn" style="height: 80px;">
         <button class="btn btn-floating text-white btn-lg" style="background-color: #f44336;" data-bs-toggle="modal" data-bs-target="#add-item-modal">
@@ -68,16 +67,40 @@
       </div>
     </div>
     <div class="tab-pane fade" id="options-tab-pane" role="tabpanel" aria-labelledby="options-tab" tabindex="2">
-      <a href="expiring_products.json" download="expiring_products.json" class="btn">Exportar dados</a>
-      <input type="file" id="file-input" accept=".json" class="d-none"/>
-      <label for="file-input" class="btn">Importar dados</label>
+      <div class="container mt-3">
+        <div class="row justify-content-start">
+          <div class="col-6 col-sm-3">
+            <!-- <a href="" class="btn" id="export-products-button">Exportar dados</a> -->
+            <input type="button" id="export-products-input" class="d-none"/>
+            <label for="export-products-input" class="btn">Exportar dados</label>
+          </div>
+          <div class="col-6 col-sm-3 mt-2">
+            <input type="file" id="import-products-input" accept=".json" class="d-none"/>
+            <label for="import-products-input" class="btn">Importar dados</label>
+          </div>
+
+        <!-- </div>
+        <div class="row justify-content-start"> -->
+          <!-- Force next columns to break to new line -->
+          <!-- <div class="w-100"></div>
+
+          <div class="col-6 col-sm-3 mt-2">
+            <input type="file" id="import-foods-input" accept=".json" class="d-none"/>
+            <label for="import-foods-input" class="btn">Importar alimentos</label>
+          </div>
+          <div class="col-6 col-sm-3 mt-2">
+            <input type="file" id="import-medicines-input" accept=".json" class="d-none"/>
+            <label for="import-medicines-input" class="btn">Importar medicamentos</label>
+          </div> -->
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Edit item modal -->
   <div class="modal fade" id="edit-item-modal" tabindex="-1" aria-labelledby="edit-item-modal-title" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <form onSubmit="editItem(event)">
+    <div class="modal-dialog">
+      <form>
         <div class="modal-content">
           <div class="modal-header">
             <h1 class="modal-title fs-5" id="edit-item-modal-title">Editar</h1>
@@ -124,7 +147,7 @@
   <!-- Add item modal -->
   <div class="modal fade" id="add-item-modal" tabindex="-1" aria-labelledby="add-item-modal-title" aria-hidden="true">
     <div class="modal-dialog">
-      <form onSubmit="addItemFromForm(event)">
+      <form>
         <div class="modal-content">
           <div class="modal-header">
             <h1 class="modal-title fs-5" id="add-item-modal-title">Adicionar item</h1>
@@ -133,19 +156,13 @@
 
           <div class="modal-body">
             <div class="form-floating mb-3">
-              <input class="form-control" list="datalistOptions" id="new-item-name" name="new-item-name" onchange="itemInHistory()" value="Teste" required>
-              <datalist id="datalistOptions">
-                <option value="San Francisco">
-                <option value="New York">
-                <option value="Seattle">
-                <option value="Los Angeles">
-                <option value="Chicago">
-              </datalist>
+              <input class="form-control" list="datalistOptions" id="new-item-name" name="new-item-name" required>
+              <datalist id="datalistOptions"></datalist>
               <label for="new-item-name">Nome</label>
             </div>
 
             <div class="form-floating mb-3">
-              <input type="number" class="form-control" id="new-item-quantity" name="new-item-quantity" value="5" required>
+              <input type="number" class="form-control" id="new-item-quantity" name="new-item-quantity" required>
               <label for="new-item-quantity">Quantidade</label>
             </div>
 
@@ -155,7 +172,7 @@
             </div>
 
             <div class="form-floating mb-3">
-              <input type="number" class="form-control" id="new-item-duration" name="new-item-duration" value="7" required>
+              <input type="number" class="form-control" id="new-item-duration" name="new-item-duration" required>
               <label for="new-item-duration">Duração em dias (após aberto)</label>
             </div>
           </div>
@@ -169,15 +186,16 @@
   </div>
 
   <!-- Bootstrap -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
   <!-- MDB -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/8.0.0/mdb.umd.min.js" integrity="sha512-z2TpMCfA7shP7qK/58k3WvdKLCFthQVrsfq+qsOjtVzk6QRE5mYgs6rd8pjtbtuqZtOJt8Q/IGpacrteVcoUpA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/8.0.0/mdb.umd.min.js" integrity="sha512-z2TpMCfA7shP7qK/58k3WvdKLCFthQVrsfq+qsOjtVzk6QRE5mYgs6rd8pjtbtuqZtOJt8Q/IGpacrteVcoUpA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
   <!-- Luxon for working with dates and times -->
-  <script src="https://cdn.jsdelivr.net/npm/luxon@3.5.0/build/global/luxon.min.js" integrity="sha256-/TZdvWBQbZdgT95AgMF6nDLyjhe3QdOMpw4VLnkcgq4=" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/luxon@3.5.0/build/global/luxon.min.js" integrity="sha256-/TZdvWBQbZdgT95AgMF6nDLyjhe3QdOMpw4VLnkcgq4=" crossorigin="anonymous"></script>
 
   <!-- Custom scripts -->
-  <script src="script.js"></script>
+  <!-- <script src="idb-backup-and-restore.js" type="module"></script> -->
+  <script src="script.js" type="module"></script>
 </body>
 </html>

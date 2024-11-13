@@ -1,6 +1,6 @@
 // TODO: when adding or editing items, only update the list, don't reload the whole list
 
-// import { exportToJson, importFromJson } from 'idb-backup-and-restore.js'
+import { clearDatabase, exportToJson, importFromJson } from './idb-backup-and-restore.mjs'
 
 // #region Global variables
 
@@ -26,12 +26,28 @@ let db;
 
 // #region UI Event listeners
 
-// finds when the add item modal is shown and update the date input and its min value to the current date
+// finds when the add item modal is shown and clear the form
+// also update needed information
 document.getElementById('add-item-modal').addEventListener('shown.bs.modal', function () {
-  const expiringDate = document.getElementById('new-item-expiring-date');
+  // set the correct form action
+  const formElement = document.getElementById('add-item-modal').querySelector('form');
+  formElement.addEventListener("submit", addItemFromForm);
+
+  // clear the form
+  const nameElement = document.getElementById('new-item-name');
+  nameElement.value = "";
+
+  const quantityElement = document.getElementById('new-item-quantity');
+  quantityElement.value = "";
+
+  const durationElement = document.getElementById('new-item-duration');
+  durationElement.value = "";
+
+  // update the date input and its min value to the current date
+  const expiringDateElement = document.getElementById('new-item-expiring-date');
   const currentDate = new Date();
-  expiringDate.min = currentDate.toISOString().split('T')[0];
-  expiringDate.valueAsDate = currentDate;
+  expiringDateElement.min = currentDate.toISOString().split('T')[0];
+  expiringDateElement.valueAsDate = currentDate;
 
   // clear the datalist options
   const datalistOptions = document.getElementById('datalistOptions');
@@ -40,8 +56,6 @@ document.getElementById('add-item-modal').addEventListener('shown.bs.modal', fun
   }
 
   // add the items from the history to the datalist
-
-
   const tab = document.querySelector('.nav-link.active').id;
   let table;
 
@@ -51,10 +65,9 @@ document.getElementById('add-item-modal').addEventListener('shown.bs.modal', fun
     table = MEDICINES_HISTORY_TABLE;
   } else {
     console.error("Tab not found:", tab);
-    console.log(e.target);
   }
 
-  // Open our object store and then get a cursor - which iterates through all the
+  // open our object store and then get a cursor - which iterates through all the
   // different data items in the store
   let objectStore;
   try {
@@ -63,7 +76,6 @@ document.getElementById('add-item-modal').addEventListener('shown.bs.modal', fun
     console.error("Error opening object store", table, ":", error);
   }
 
-  // const objectStore = db.transaction([table]).objectStore(table);
   objectStore.openCursor().addEventListener("success", (e) => {
     // Get a reference to the cursor
     const cursor = e.target.result;
@@ -81,6 +93,7 @@ document.getElementById('add-item-modal').addEventListener('shown.bs.modal', fun
 });
 
 // finds when the edit item modal is shown and update the modal with the item data
+// also update needed information
 document.getElementById('edit-item-modal').addEventListener('show.bs.modal', function (event) {
   // get the button that triggered the modal
   const button = event.relatedTarget;
@@ -99,15 +112,25 @@ document.getElementById('edit-item-modal').addEventListener('show.bs.modal', fun
 
   const name = item.name;
   const quantity = item.quantity;
-
   const formElement = document.getElementById('edit-item-modal').querySelector('form');
 
   formElement.setAttribute("data-item-id", id);
   formElement.setAttribute("data-list-id", listElementId);
+  formElement.addEventListener("submit", editItem);
+
   document.getElementById('edit-item-modal-title').textContent = 'Editar ' + name;
-  document.getElementById('opened-items').max = quantity;
-  document.getElementById('consumed-items').max = quantity;
-  document.getElementById('discarded-items').max = quantity;
+
+  const openedItemsElement = document.getElementById('opened-items')
+  const consumedItemsElement = document.getElementById('consumed-items')
+  const discardedItemsElement = document.getElementById('discarded-items')
+
+  openedItemsElement.value = 0;
+  consumedItemsElement.value = 0;
+  discardedItemsElement.value = 0;
+
+  openedItemsElement.max = quantity;
+  consumedItemsElement.max = quantity;
+  discardedItemsElement.max = quantity;
 
   // make sure that the sum of opened, consumed and spoiled items is less than or equal to the quantity
   formElement.addEventListener('submit', function (event) {
@@ -120,6 +143,20 @@ document.getElementById('edit-item-modal').addEventListener('show.bs.modal', fun
       alert('A soma dos itens abertos, consumidos e descartados deve ser menor ou igual à quantidade');
     } else if (openedItems + consumedItems + spoiledItems == 0) {
       event.preventDefault();
+    }
+  });
+});
+
+document.getElementById('new-item-name').addEventListener('change', function (event) {
+  const datalist = document.getElementById('new-item-name');
+  const options = Array.from(document.getElementById('datalistOptions').children);
+
+  options.forEach((option) => {
+    console.log(option);
+    if (option.value === datalist.value) {
+      const duration = option.getAttribute("data-value");
+      document.getElementById('new-item-duration').value = duration;
+      return;
     }
   });
 });
@@ -206,8 +243,6 @@ function openItem(id, quantity, items, table) {
     editedItem.opened = true;
     editData(editedItem, table);
   }
-
-  // sortItems();
 }
 
 function consumeItem(id, quantity, items, table) {
@@ -261,6 +296,7 @@ function addItemFromForm(e) {
   let items;
   let sortedItems;
   let table;
+  let history_table;
 
   // get current active tab
   const tab = document.querySelector('.nav-link.active').id;
@@ -279,7 +315,6 @@ function addItemFromForm(e) {
     history_table = MEDICINES_HISTORY_TABLE;
   } else {
     console.error("Tab not found:", tab);
-    console.log(e.target);
   }
 
   // grab the values entered into the form fields and store them in an object ready for being inserted into the DB
@@ -313,23 +348,49 @@ function addItemFromForm(e) {
 function sortItems(items, sortedItems) {
   sortedItems.length = 0;
   sortedItems.push(...Object.values(items));
+  // sort the items by expiring date, opened and quantity
   sortedItems.sort((a, b) => a.expiring_date - b.expiring_date || b.opened - a.opened || b.quantity - a.quantity);
 }
 
-function itemInHistory() {
-  const datalist = document.getElementById('new-item-name');
-  const options = Array.from(document.getElementById('datalistOptions').children);
+// detect when export-products-input is clicked and export the products table
+document.getElementById('export-products-input').addEventListener('click', function (e) {
+  exportToJson(db)
+  .then(result => {
+    const blob = new Blob([result], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'expiring_products.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    a.remove();
+  })
+  .catch(error => {
+    console.error('Something went wrong during export:', error);
+  })
+});
 
-  console.log(options);
+// detect when import-products-input is clicked and import the products table
+document.getElementById('import-products-input').addEventListener('change', function (e) {
+  const file = e.target.files[0];
+  const reader = new FileReader();
 
-  options.forEach((option) => {
-    if (option.value === datalist.value) {
-      const duration = option.getAttribute("data-value");
-      document.getElementById('new-item-duration').value = duration;
-      return;
-    }
-  });
-}
+  reader.onload = function (e) {
+    const result = e.target.result;
+    clearDatabase(db)
+    .then(() => importFromJson(db, result))
+    .then(() => {
+      console.log('Successfully cleared database and imported data')
+      displayData(foodsListElement, foodItems, sortedFoodItems, FOODS_TABLE);
+      displayData(medicinesListElement, medicineItems, sortedMedicineItems, MEDICINES_TABLE);
+    })
+    .catch(error => {
+      console.error('Could not clear & import database:', error)
+    })
+  };
+
+  reader.readAsText(file);
+});
 
 // #endregion
 
@@ -353,8 +414,8 @@ window.addEventListener("DOMContentLoaded", () => {
     const githubCorner = document.querySelector(".github-corner");
     githubCorner.style.display = "none";
 
-    const themeButton = document.querySelector("#change-theme-button");
-    themeButton.style.display = "none";
+    // const themeButton = document.querySelector("#change-theme-button");
+    // themeButton.style.display = "none";
   }
 });
 
@@ -378,10 +439,9 @@ openRequest.addEventListener("success", () => {
   // Store the opened database object in the db variable. This is used a lot below
   db = openRequest.result;
 
-  // Run the displayData() function to display the items already in the IDB
+  // Run the displayData function to display the items already in the IDB
   displayData(foodsListElement, foodItems, sortedFoodItems, FOODS_TABLE);
   displayData(medicinesListElement, medicineItems, sortedMedicineItems, MEDICINES_TABLE);
-  // displayData(listElement, items, table)
 });
 
 // Set up the database tables if this has not already been done
@@ -449,11 +509,6 @@ function addHistoryData(name, duration, table) {
   const addRequest = objectStore.put({name: name, duration: duration});
 
   addRequest.addEventListener("success", () => {
-    // Clear the form, ready for adding the next entry
-    // nameInput.value = "";
-    // quantityInput.value = "";
-    // expiringDateInput.value = "";
-    // durationInput.value = "";
     console.log("Item added to the", table, "database:", {name: name, duration: duration});
   });
 
@@ -479,11 +534,6 @@ function addDataAndUpdateUI(newItem, listElement, items, sortedItems, table) {
   const addRequest = objectStore.add(newItem);
 
   addRequest.addEventListener("success", () => {
-    // Clear the form, ready for adding the next entry
-    // nameInput.value = "";
-    // quantityInput.value = "";
-    // expiringDateInput.value = "";
-    // durationInput.value = "";
     console.log("Item added to the", table, "database:", newItem);
   });
 
@@ -491,8 +541,7 @@ function addDataAndUpdateUI(newItem, listElement, items, sortedItems, table) {
   transaction.addEventListener("complete", () => {
     console.log("Transaction completed: database modification finished.");
 
-    // update the display of data to show the newly added item, by running displayData()
-    // displayData();
+    // update the display of data to show the newly added item, by running displayData
     displayData(listElement, items, sortedItems, table);
   });
 
@@ -512,20 +561,12 @@ function addData(newItem, table) {
   const addRequest = objectStore.add(newItem);
 
   addRequest.addEventListener("success", () => {
-    // Clear the form, ready for adding the next entry
-    // nameInput.value = "";
-    // quantityInput.value = "";
-    // expiringDateInput.value = "";
-    // durationInput.value = "";
     console.log("Item added to the", table, "database:", newItem);
   });
 
   // Report on the success of the transaction completing, when everything is done
   transaction.addEventListener("complete", () => {
     console.log("Transaction completed:", table, "database modification finished.");
-
-    // update the display of data to show the newly added item, by running displayData() again.
-    // displayData();
   });
 
   transaction.addEventListener("error", () =>
@@ -533,7 +574,6 @@ function addData(newItem, table) {
   );
 }
 
-// Define the displayData() function
 function displayData(listElement, items, sortedItems, table) {
   // Here we empty the contents of the list element each time the display is updated
   // If you didn't do this, you'd get duplicates listed each time a new item is added
@@ -554,7 +594,6 @@ function displayData(listElement, items, sortedItems, table) {
     console.error("Error opening object store", table, ":", error);
   }
 
-  // const objectStore = db.transaction([table]).objectStore(table);
   objectStore.openCursor().addEventListener("success", (e) => {
     // Get a reference to the cursor
     const cursor = e.target.result;
@@ -566,7 +605,7 @@ function displayData(listElement, items, sortedItems, table) {
       // Iterate to the next item in the cursor
       cursor.continue();
     } else {
-      // Again, if list item is empty, display a 'No items stored' message
+      // if list item is empty, display a 'No items stored' message
       if (Object.keys(items).length === 0) {
         const listItem = document.createElement("li");
         listItem.classList.add("list-group-item", "d-flex", "justify-content-between", "align-items-center");
@@ -640,7 +679,6 @@ function editData(editedItem, table) {
     };
     requestUpdate.onsuccess = (event) => {
       // Success - the data is updated!
-      // displayData();
       console.log("Item updated:", editedItem);
     };
   };
@@ -658,9 +696,6 @@ function deleteData(id, table) {
 
   // report that the data item has been deleted
   transaction.addEventListener("complete", () => {
-    // delete the parent of the button
-    // which is the list item, so it is no longer displayed
-    // e.target.parentNode.parentNode.removeChild(e.target.parentNode);
     console.log(`Item ${id} deleted.`);
 
     // Again, if list item is empty, display a 'No items stored' message
