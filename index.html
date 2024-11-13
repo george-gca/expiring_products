@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-mdb-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Produtos a vencer</title>
+
+  <!-- Progressive Web App Manifest -->
+  <link rel="manifest" href="expiring_products.webmanifest" />
+  <!-- <link rel="apple-touch-icon" href="assets/img/brand/symbol/colored.png" /> -->
+
+  <!-- Font Awesome -->
+  <link
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+  rel="stylesheet"
+  />
+
+  <!-- Google Fonts -->
+  <link
+  href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"
+  rel="stylesheet"
+  />
+
+  <!-- Bootstrap -->
+  <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.3/dist/slate/bootstrap.min.css" integrity="sha256-wiAh4n8qc/EvV4YhAjqU+bA9sW69vgGMP+LYATjdTj0=" crossorigin="anonymous"> -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+  <!-- MDB -->
+  <link
+  href="https://cdn.jsdelivr.net/npm/mdb-ui-kit@8.0.0/css/mdb.min.css"
+  rel="stylesheet"
+  />
+</head>
+
+<!-- TODO: add tabs https://getbootstrap.com/docs/5.3/components/navs-tabs/#tabs -->
+<!-- https://fastbootstrap.com/docs/margin/-->
+<body class="m-4">
+  <h1>Produtos a vencer</h1>
+  <ul class="nav nav-tabs" id="tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="foods-tab" data-bs-toggle="tab" data-bs-target="#foods-tab-pane" type="button" role="tab" aria-controls="foods-tab-pane" aria-selected="true">Alimentos</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="medicines-tab" data-bs-toggle="tab" data-bs-target="#medicines-tab-pane" type="button" role="tab" aria-controls="medicines-tab-pane" aria-selected="false">Remédios</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="options-tab" data-bs-toggle="tab" data-bs-target="#options-tab-pane" type="button" role="tab" aria-controls="options-tab-pane" aria-selected="false">Opções</button>
+    </li>
+  </ul>
+
+  <div class="tab-content" id="tabsContents">
+    <div class="tab-pane fade show active" id="foods-tab-pane" role="tabpanel" aria-labelledby="foods-tab" tabindex="0">
+      <ul class="list-group list-group-flush list-unstyled" id="foods-list"></ul>
+      <!-- Floating add item button -->
+      <div class="fixed-action-btn" style="height: 80px;">
+        <button class="btn btn-floating text-white btn-lg" style="background-color: #f44336;" data-bs-toggle="modal" data-bs-target="#add-item-modal">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+      </div>
+    </div>
+    <div class="tab-pane fade" id="medicines-tab-pane" role="tabpanel" aria-labelledby="medicines-tab" tabindex="1">
+      <ul class="list-group list-group-flush list-unstyled" id="medicines-list"></ul>
+      <!-- Floating add item button -->
+      <div class="fixed-action-btn" style="height: 80px;">
+        <button class="btn btn-floating text-white btn-lg" style="background-color: #f44336;" data-bs-toggle="modal" data-bs-target="#add-item-modal">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+      </div>
+    </div>
+    <div class="tab-pane fade" id="options-tab-pane" role="tabpanel" aria-labelledby="options-tab" tabindex="2">
+      <a href="expiring_products.json" download="expiring_products.json" class="btn">Exportar dados</a>
+      <input type="file" id="file-input" accept=".json" class="d-none"/>
+      <label for="file-input" class="btn">Importar dados</label>
+    </div>
+  </div>
+
+  <!-- Edit item modal -->
+  <div class="modal fade" id="edit-item-modal" tabindex="-1" aria-labelledby="edit-item-modal-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <form onSubmit="editItem(event)">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="edit-item-modal-title">Editar</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="basic-url" class="form-label">Itens abertos</label>
+              <div class="input-group">
+                <button class="btn btn-outline-secondary" type="button" id="minus-1-opened-item" onclick="this.parentNode.querySelector('input[type=number]').stepDown()"><i class="fa-solid fa-minus"></i></button>
+                <input type="number" class="form-control" min="0" value="0" id="opened-items" name="opened-items">
+                <button class="btn btn-outline-secondary" type="button" id="plus-1-opened-item" onclick="this.parentNode.querySelector('input[type=number]').stepUp()"><i class="fa-solid fa-plus"></i></button>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="basic-url" class="form-label">Itens consumidos</label>
+              <div class="input-group">
+                <button class="btn btn-outline-secondary" type="button" id="minus-1-consumed-item" onclick="this.parentNode.querySelector('input[type=number]').stepDown()"><i class="fa-solid fa-minus"></i></button>
+                <input type="number" class="form-control" min="0" value="0" id="consumed-items" name="consumed-items">
+                <button class="btn btn-outline-secondary" type="button" id="plus-1-consumed-item" onclick="this.parentNode.querySelector('input[type=number]').stepUp()"><i class="fa-solid fa-plus"></i></button>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label for="basic-url" class="form-label">Itens descartados</label>
+              <div class="input-group">
+                <button class="btn btn-outline-secondary" type="button" id="minus-1-discarded-item" onclick="this.parentNode.querySelector('input[type=number]').stepDown()"><i class="fa-solid fa-minus"></i></button>
+                <input type="number" class="form-control" min="0" value="0" id="discarded-items" name="discarded-items">
+                <button class="btn btn-outline-secondary" type="button" id="plus-1-discarded-item" onclick="this.parentNode.querySelector('input[type=number]').stepUp()"><i class="fa-solid fa-plus"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary" id="confirm-edit-button" data-bs-dismiss="modal"><i class="fa-solid fa-check"></i></button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add item modal -->
+  <div class="modal fade" id="add-item-modal" tabindex="-1" aria-labelledby="add-item-modal-title" aria-hidden="true">
+    <div class="modal-dialog">
+      <form onSubmit="addItemFromForm(event)">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="add-item-modal-title">Adicionar item</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+
+          <div class="modal-body">
+            <div class="form-floating mb-3">
+              <input class="form-control" list="datalistOptions" id="new-item-name" name="new-item-name" onchange="itemInHistory()" value="Teste" required>
+              <datalist id="datalistOptions">
+                <option value="San Francisco">
+                <option value="New York">
+                <option value="Seattle">
+                <option value="Los Angeles">
+                <option value="Chicago">
+              </datalist>
+              <label for="new-item-name">Nome</label>
+            </div>
+
+            <div class="form-floating mb-3">
+              <input type="number" class="form-control" id="new-item-quantity" name="new-item-quantity" value="5" required>
+              <label for="new-item-quantity">Quantidade</label>
+            </div>
+
+            <div class="form-floating mb-3">
+              <input type="date" class="form-control" id="new-item-expiring-date" name="new-item-expiring-date" required>
+              <label for="new-item-expiring-date">Vence em</label>
+            </div>
+
+            <div class="form-floating mb-3">
+              <input type="number" class="form-control" id="new-item-duration" name="new-item-duration" value="7" required>
+              <label for="new-item-duration">Duração em dias (após aberto)</label>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-primary" data-bs-dismiss="modal"><i class="fa-solid fa-check"></i></button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Bootstrap -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+  <!-- MDB -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/8.0.0/mdb.umd.min.js" integrity="sha512-z2TpMCfA7shP7qK/58k3WvdKLCFthQVrsfq+qsOjtVzk6QRE5mYgs6rd8pjtbtuqZtOJt8Q/IGpacrteVcoUpA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <!-- Luxon for working with dates and times -->
+  <script src="https://cdn.jsdelivr.net/npm/luxon@3.5.0/build/global/luxon.min.js" integrity="sha256-/TZdvWBQbZdgT95AgMF6nDLyjhe3QdOMpw4VLnkcgq4=" crossorigin="anonymous"></script>
+
+  <!-- Custom scripts -->
+  <script src="script.js"></script>
+</body>
+</html>
