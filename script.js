@@ -29,10 +29,6 @@ let db;
 // finds when the add item modal is shown and clear the form
 // also update needed information
 document.getElementById('add-item-modal').addEventListener('shown.bs.modal', function () {
-  // set the correct form action
-  const formElement = document.getElementById('add-item-modal').querySelector('form');
-  formElement.addEventListener("submit", addItemFromForm);
-
   // clear the form
   const nameElement = document.getElementById('new-item-name');
   nameElement.value = "";
@@ -92,6 +88,8 @@ document.getElementById('add-item-modal').addEventListener('shown.bs.modal', fun
   });
 });
 
+document.getElementById('add-item-modal').querySelector('form').addEventListener("submit", addItemFromForm);
+
 // finds when the edit item modal is shown and update the modal with the item data
 // also update needed information
 document.getElementById('edit-item-modal').addEventListener('show.bs.modal', function (event) {
@@ -116,7 +114,6 @@ document.getElementById('edit-item-modal').addEventListener('show.bs.modal', fun
 
   formElement.setAttribute("data-item-id", id);
   formElement.setAttribute("data-list-id", listElementId);
-  formElement.addEventListener("submit", editItem);
 
   document.getElementById('edit-item-modal-title').textContent = 'Editar ' + name;
 
@@ -146,6 +143,8 @@ document.getElementById('edit-item-modal').addEventListener('show.bs.modal', fun
     }
   });
 });
+
+document.getElementById('edit-item-modal').querySelector('form').addEventListener("submit", editItem);
 
 document.getElementById('new-item-name').addEventListener('change', function (event) {
   const datalist = document.getElementById('new-item-name');

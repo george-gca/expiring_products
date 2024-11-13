@@ -70,7 +70,6 @@
       <div class="container mt-3">
         <div class="row justify-content-start">
           <div class="col-6 col-sm-3">
-            <!-- <a href="" class="btn" id="export-products-button">Exportar dados</a> -->
             <input type="button" id="export-products-input" class="d-none"/>
             <label for="export-products-input" class="btn">Exportar dados</label>
           </div>
@@ -78,20 +77,6 @@
             <input type="file" id="import-products-input" accept=".json" class="d-none"/>
             <label for="import-products-input" class="btn">Importar dados</label>
           </div>
-
-        <!-- </div>
-        <div class="row justify-content-start"> -->
-          <!-- Force next columns to break to new line -->
-          <!-- <div class="w-100"></div>
-
-          <div class="col-6 col-sm-3 mt-2">
-            <input type="file" id="import-foods-input" accept=".json" class="d-none"/>
-            <label for="import-foods-input" class="btn">Importar alimentos</label>
-          </div>
-          <div class="col-6 col-sm-3 mt-2">
-            <input type="file" id="import-medicines-input" accept=".json" class="d-none"/>
-            <label for="import-medicines-input" class="btn">Importar medicamentos</label>
-          </div> -->
         </div>
       </div>
     </div>
@@ -137,6 +122,7 @@
           </div>
 
           <div class="modal-footer">
+            <!-- TODO: remove data-bs-dismiss so it only closes if the form submition was successfull -->
             <button type="submit" class="btn btn-primary" id="confirm-edit-button" data-bs-dismiss="modal"><i class="fa-solid fa-check"></i></button>
           </div>
         </div>
@@ -178,6 +164,7 @@
           </div>
 
           <div class="modal-footer">
+            <!-- TODO: remove data-bs-dismiss so it only closes if the form submition was successfull -->
             <button type="submit" class="btn btn-primary" data-bs-dismiss="modal"><i class="fa-solid fa-check"></i></button>
           </div>
         </div>
