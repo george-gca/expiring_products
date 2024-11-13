@@ -1,0 +1,27 @@
+baseurl: "" # the subpath of your site, e.g. /blog
+url: "" # the base hostname & protocol for your site, e.g. http://example.com
+
+# Jekyll Polyglot
+languages: ["en-us", "pt-br"]
+default_lang: "pt-br"
+exclude_from_localization: ["assets"]
+lang_from_path: true
+parallel_localization: false
+
+# Build settings
+plugins:
+  - jekyll-polyglot
+
+include: ["_pages"]
+
+exclude:
+  - .git/
+  - .github/
+  - .gitignore
+  - .ruby-version
+  - LICENSE
+  - README.md
+
+sass:
+  sourcemap: never
+  style: compressed

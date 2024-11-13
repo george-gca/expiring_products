@@ -25,14 +25,14 @@ export function exportToJson(idbDatabase) {
           .addEventListener("success", (event) => {
             const cursor = event.target.result;
             if (cursor) {
-              // Cursor holds value, put it into store data
+              // cursor holds value, put it into store data
               allObjects.push(cursor.value);
               cursor.continue();
             } else {
-              // No more values, store is done
+              // no more values, store is done
               exportObject[storeName] = allObjects;
 
-              // Last store was handled
+              // last store was handled
               if (
                 idbDatabase.objectStoreNames.length ===
                 Object.keys(exportObject).length
@@ -70,10 +70,10 @@ export function importFromJson(idbDatabase, json) {
         request.addEventListener("success", () => {
           count++;
           if (count === importObject[storeName].length) {
-            // Added all objects for this store
+            // added all objects for this store
             delete importObject[storeName];
             if (Object.keys(importObject).length === 0) {
-              // Added all object stores
+              // added all object stores
               resolve();
             }
           }
@@ -105,7 +105,7 @@ export function clearDatabase(idbDatabase) {
         .addEventListener("success", () => {
           count++;
           if (count === idbDatabase.objectStoreNames.length) {
-            // Cleared all object stores
+            // cleared all object stores
             resolve();
           }
         });
