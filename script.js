@@ -325,12 +325,20 @@ function addItemFromForm(e) {
   const durationInput = document.getElementById("new-item-duration");
   let expiringDate = DateTime.fromISO(expiringDateInput.value).endOf('day');
 
+  let duration;
+  if (durationInput.value === "") {
+    // calculate duration based on the expiring date
+    duration = Math.ceil(expiringDate.diff(DateTime.now(), 'days').days);
+  } else {
+    duration = durationInput.value;
+  }
+
   addDataAndUpdateUI(
     {
       name: nameInput.value,
       quantity: quantityInput.value,
       expiring_date: expiringDate.toISO(),
-      duration: durationInput.value,
+      duration: duration,
       date_opened: null,
       opened: false
     },
