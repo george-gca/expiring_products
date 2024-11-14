@@ -17,6 +17,7 @@ import_data: Import data
 item_name: Name
 medicines: Medicines
 no_items: No items here.
+no_items_to_export: No items to export.
 opened_items: Opened items
 options: Options
 products_to_expire: Products to expire
