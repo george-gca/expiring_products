@@ -362,6 +362,11 @@
 
   // detect when export-products-input is clicked and export the products table
   document.getElementById('export-products-input').addEventListener('click', function (e) {
+    if (sortedFoodItems.length === 0 && sortedMedicineItems.length === 0) {
+      alert('{{ page.no_items_to_export }}');
+      return;
+    }
+
     exportToJson(db)
     .then(result => {
       const blob = new Blob([result], {type: 'application/json'});
@@ -714,6 +719,17 @@
       //   listElement.appendChild(listItem);
       // }
     });
+  }
+
+  // #endregion
+
+  // #region Service worker for offline support
+
+  // Register service worker to control making site work offline
+  if('serviceWorker' in navigator) {
+    navigator.serviceWorker
+      .register('/assets/js/sw.js')
+      .then(() => console.log('Service Worker Registered'));
   }
 
   // #endregion
