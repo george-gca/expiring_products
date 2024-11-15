@@ -1,3 +1,4 @@
+// https://gist.github.com/loilo/ed43739361ec718129a15ae5d531095b
 /**
  * Export all data from an IndexedDB database
  *
