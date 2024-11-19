@@ -1,0 +1,286 @@
+// open our database; it is created if it doesn't already exist
+// (see the upgradeneeded handler below)
+const openRequest = window.indexedDB.open("expiring_dates_db", 1);
+
+// error handler signifies that the database didn't open successfully
+openRequest.addEventListener("error", () =>
+  console.error("Database failed to open")
+);
+
+// success handler signifies that the database opened successfully
+openRequest.addEventListener("success", () => {
+  console.log("Database opened successfully");
+
+  // store the opened database object in the db variable. This is used a lot below
+  db = openRequest.result;
+
+  // run the displayData function to display the items already in the IDB
+  displayData(foodsListElement, foodItems, sortedFoodItems, FOODS_TABLE);
+  displayData(medicinesListElement, medicineItems, sortedMedicineItems, MEDICINES_TABLE);
+});
+
+// set up the database tables if this has not already been done
+openRequest.addEventListener("upgradeneeded", (e) => {
+  // grab a reference to the opened database
+  db = e.target.result;
+
+  // create an objectStore in our database to store items and an auto-incrementing key
+  // an objectStore is similar to a 'table' in a relational database
+  const foodsObjectStore = db.createObjectStore(FOODS_TABLE, {
+    keyPath: "id",
+    autoIncrement: true,
+  });
+
+  // define what data items the objectStore will contain
+  foodsObjectStore.createIndex("name", "name", { unique: false });
+  foodsObjectStore.createIndex("quantity", "quantity", { unique: false });
+  foodsObjectStore.createIndex("expiring_date", "expiring_date", { unique: false });
+  foodsObjectStore.createIndex("duration", "duration", { unique: false });
+  foodsObjectStore.createIndex("date_opened", "date_opened", { unique: false });
+  foodsObjectStore.createIndex("opened", "opened", { unique: false });
+
+  const medicinesObjectStore = db.createObjectStore(MEDICINES_TABLE, {
+    keyPath: "id",
+    autoIncrement: true,
+  });
+
+  // define what data items the objectStore will contain
+  medicinesObjectStore.createIndex("name", "name", { unique: false });
+  medicinesObjectStore.createIndex("quantity", "quantity", { unique: false });
+  medicinesObjectStore.createIndex("expiring_date", "expiring_date", { unique: false });
+  medicinesObjectStore.createIndex("duration", "duration", { unique: false });
+  medicinesObjectStore.createIndex("date_opened", "date_opened", { unique: false });
+  medicinesObjectStore.createIndex("opened", "opened", { unique: false });
+
+  const foodsHistoryObjectStore = db.createObjectStore(FOODS_HISTORY_TABLE, {
+    keyPath: "name",
+    autoIncrement: false,
+    unique: true
+  });
+
+  // define what data items the objectStore will contain
+  foodsHistoryObjectStore.createIndex("duration", "duration", { unique: false });
+
+  const medicinesHistoryObjectStore = db.createObjectStore(MEDICINES_HISTORY_TABLE, {
+    keyPath: "name",
+    autoIncrement: false,
+    unique: true
+  });
+
+  // define what data items the objectStore will contain
+  medicinesHistoryObjectStore.createIndex("duration", "duration", { unique: false });
+
+  console.log("Database setup complete");
+});
+
+function addHistoryData(name, duration, table) {
+  // open a read/write db transaction, ready for adding the data
+  const transaction = db.transaction([table], "readwrite");
+
+  // call an object store that's already been added to the database
+  const objectStore = transaction.objectStore(table);
+
+  // make a request to add our newItem object to the object store
+  const addRequest = objectStore.put({name: name, duration: duration});
+
+  addRequest.addEventListener("success", () => {
+    console.log("Item added to the", table, "database:", {name: name, duration: duration});
+  });
+
+  // report on the success of the transaction completing, when everything is done
+  transaction.addEventListener("complete", () => {
+    console.log("Transaction completed: database modification finished.");
+  });
+
+  transaction.addEventListener("error", () =>
+    console.log("Transaction not opened due to error")
+  );
+}
+
+// define the addData() function
+function addDataAndUpdateUI(newItem, listElement, items, sortedItems, table) {
+  // open a read/write db transaction, ready for adding the data
+  const transaction = db.transaction([table], "readwrite");
+
+  // call an object store that's already been added to the database
+  const objectStore = transaction.objectStore(table);
+
+  // make a request to add our newItem object to the object store
+  const addRequest = objectStore.add(newItem);
+
+  addRequest.addEventListener("success", () => {
+    console.log("Item added to the", table, "database:", newItem);
+  });
+
+  // report on the success of the transaction completing, when everything is done
+  transaction.addEventListener("complete", () => {
+    console.log("Transaction completed: database modification finished.");
+
+    // update the display of data to show the newly added item, by running displayData
+    displayData(listElement, items, sortedItems, table);
+  });
+
+  transaction.addEventListener("error", () =>
+    console.log("Transaction not opened due to error")
+  );
+}
+
+function addData(newItem, table) {
+  // open a read/write db transaction, ready for adding the data
+  const transaction = db.transaction([table], "readwrite");
+
+  // call an object store that's already been added to the database
+  const objectStore = transaction.objectStore(table);
+
+  // make a request to add our newItem object to the object store
+  const addRequest = objectStore.add(newItem);
+
+  addRequest.addEventListener("success", () => {
+    console.log("Item added to the", table, "database:", newItem);
+  });
+
+  // report on the success of the transaction completing, when everything is done
+  transaction.addEventListener("complete", () => {
+    console.log("Transaction completed:", table, "database modification finished.");
+  });
+
+  transaction.addEventListener("error", () =>
+    console.log("Transaction not opened due to error")
+  );
+}
+
+function displayData(listElement, items, sortedItems, table) {
+  // here we empty the contents of the list element each time the display is updated
+  // if you didn't do this, you'd get duplicates listed each time a new item is added
+  while (listElement.firstChild) {
+    listElement.removeChild(listElement.firstChild);
+  }
+
+  for (let key in items) {
+    delete items[key];
+  }
+
+  // open our object store and then get a cursor - which iterates through all the
+  // different data items in the store
+  let objectStore;
+  try {
+    objectStore = db.transaction([table]).objectStore(table);
+  } catch (error) {
+    console.error("Error opening object store", table, ":", error);
+  }
+
+  objectStore.openCursor().addEventListener("success", (e) => {
+    // get a reference to the cursor
+    const cursor = e.target.result;
+
+    // if there is still another data item to iterate through, keep running this code
+    if (cursor) {
+      items[cursor.value.id] = cursor.value;
+      items[cursor.value.id].expiring_date = DateTime.fromISO(cursor.value.expiring_date);
+      // iterate to the next item in the cursor
+      cursor.continue();
+    } else {
+      // if list item is empty, display a 'No items stored' message
+      if (Object.keys(items).length === 0) {
+        const listItem = document.createElement("li");
+        listItem.classList.add("list-group-item", "d-flex", "justify-content-between", "align-items-center");
+        listItem.textContent = "{{ page.no_items }}";
+        listElement.appendChild(listItem);
+        console.log("No items to display from the", table, "database.");
+      } else {
+        sortItems(items, sortedItems);
+
+        for (const item of sortedItems) {
+          // create a list item to put each data item inside when displaying it
+          // structure the HTML fragment, and append it inside the list
+          const listItem = document.createElement("li");
+
+          // add list-group-item-warning to button class if item is expired
+
+          listItem.innerHTML = `
+            <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-bs-toggle="modal" data-bs-target="#edit-item-modal" data-bs-id="${item.id}">
+              <div class="d-flex align-items-center">
+                <div class="ms-2 me-auto">
+                  <div class="fw-bold">${item.name}</div>
+                  ${DateTime.fromISO(item.expiring_date).setLocale('{{ site.active_lang }}').toRelative()}
+                </div>
+              </div>
+
+              <div class="d-flex align-items-center">
+                <span class="badge text-bg-primary rounded-pill">${item.quantity}</span>
+                <span class="ms-2"><i class="fa-solid fa-chevron-right"></i></span>
+              </div>
+            </button>
+          `;
+
+          listElement.appendChild(listItem);
+          // store the ID of the data item inside an attribute on the listItem, so we know
+          // which item it corresponds to. This will be useful later when we want to edit items
+          listItem.setAttribute("data-item-id", item.id);
+        };
+
+        // if there are no more cursor items to iterate through, say so
+        console.log("All items from", table, "displayed");
+      }
+    }
+  });
+}
+
+// define the editData() function
+function editData(editedItem, table) {
+  // open a database transaction and edit the item, finding it using the id we retrieved above
+  const objectStore = db.transaction([table], "readwrite").objectStore(table);
+  const getRequest = objectStore.get(editedItem.id);
+
+  getRequest.onerror = (event) => {
+    // handle errors!
+    console.log("Error editing item:", event);
+  };
+  getRequest.onsuccess = (event) => {
+    // get the old value that we want to update
+    const storedData = event.target.result;
+
+    // update the value(s) in the object that you want to change
+    storedData.name = editedItem.name;
+    storedData.quantity = editedItem.quantity;
+    storedData.expiring_date = editedItem.expiring_date.toISO();
+    storedData.duration = editedItem.duration;
+    storedData.date_opened = editedItem.date_opened;
+    storedData.opened = editedItem.opened;
+
+    // put this updated object back into the database.
+    const requestUpdate = objectStore.put(storedData);
+    requestUpdate.onerror = (event) => {
+      // do something with the error
+      console.log("Error updating item:", event);
+    };
+    requestUpdate.onsuccess = (event) => {
+      // success - the data is updated!
+      console.log("Item updated:", editedItem);
+    };
+  };
+}
+
+// define the deleteData() function
+function deleteData(id, table) {
+  // retrieve the name of the item we want to delete. We need
+  // to convert it to a number before trying to use it with IDB; IDB key
+  // values are type-sensitive.
+  // open a database transaction and delete the item, finding it using the id we retrieved above
+  const transaction = db.transaction([table], "readwrite");
+  const objectStore = transaction.objectStore(table);
+  const deleteRequest = objectStore.delete(id);
+
+  // report that the data item has been deleted
+  transaction.addEventListener("complete", () => {
+    console.log(`Item ${id} deleted.`);
+
+    // again, if list item is empty, display a 'No items stored' message
+    // if (!listElement.firstChild) {
+    //   const listItem = document.createElement("li");
+    //   listItem.classList.add("list-group-item", "d-flex", "justify-content-between", "align-items-center");
+    //   listItem.textContent = "No items stored.";
+    //   listElement.appendChild(listItem);
+    // }
+  });
+}

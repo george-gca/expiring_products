@@ -1,0 +1,370 @@
+// finds when the add item modal is shown and clear the form
+// also update needed information
+document.getElementById('add-item-modal').addEventListener('shown.bs.modal', function () {
+  // clear the form
+  const nameElement = document.getElementById('new-item-name');
+  nameElement.value = "";
+
+  const quantityElement = document.getElementById('new-item-quantity');
+  quantityElement.value = "";
+
+  const durationElement = document.getElementById('new-item-duration');
+  durationElement.value = "";
+
+  // update the date input and its min value to the current date
+  const expiringDateElement = document.getElementById('new-item-expiring-date');
+  const currentDate = new Date();
+  expiringDateElement.min = currentDate.toISOString().split('T')[0];
+  expiringDateElement.valueAsDate = currentDate;
+
+  // clear the datalist options
+  const datalistOptions = document.getElementById('datalistOptions');
+  while (datalistOptions.firstChild) {
+    datalistOptions.removeChild(datalistOptions.firstChild);
+  }
+
+  // add the items from the history to the datalist
+  const tab = document.querySelector('.nav-link.active').id;
+  let table;
+
+  if (tab === "foods-tab") {
+    table = FOODS_HISTORY_TABLE;
+  } else if (tab === "medicines-tab") {
+    table = MEDICINES_HISTORY_TABLE;
+  } else {
+    console.error("Tab not found:", tab);
+  }
+
+  // open our object store and then get a cursor - which iterates through all the
+  // different data items in the store
+  let objectStore;
+  try {
+    objectStore = db.transaction([table]).objectStore(table);
+  } catch (error) {
+    console.error("Error opening object store", table, ":", error);
+  }
+
+  objectStore.openCursor().addEventListener("success", (e) => {
+    // get a reference to the cursor
+    const cursor = e.target.result;
+
+    // if there is still another data item to iterate through, keep running this code
+    if (cursor) {
+      const option = document.createElement("option");
+      datalistOptions.appendChild(option);
+      option.value = cursor.value.name;
+      option.setAttribute("data-value", cursor.value.duration);
+      // iterate to the next item in the cursor
+      cursor.continue();
+    }
+  });
+});
+
+document.getElementById('add-item-modal').querySelector('form').addEventListener("submit", addItemFromForm);
+
+// finds when the edit item modal is shown and update the modal with the item data
+// also update needed information
+document.getElementById('edit-item-modal').addEventListener('show.bs.modal', function (event) {
+  // get the button that triggered the modal
+  const button = event.relatedTarget;
+  const listElementId = button.parentElement.parentElement.id;
+  let items;
+
+  if (listElementId === "foods-list") {
+    items = foodItems;
+  } else if (listElementId === "medicines-list") {
+    items = medicineItems;
+  }
+
+  // update the modal with the item data
+  const id = button.getAttribute('data-bs-id');
+  const item = items[id];
+
+  const name = item.name;
+  const quantity = item.quantity;
+  const formElement = document.getElementById('edit-item-modal').querySelector('form');
+
+  formElement.setAttribute("data-item-id", id);
+  formElement.setAttribute("data-list-id", listElementId);
+
+  document.getElementById('edit-item-modal-title').textContent = '{{ page.edit }} ' + name;
+
+  const openedItemsElement = document.getElementById('opened-items')
+  const consumedItemsElement = document.getElementById('consumed-items')
+  const discardedItemsElement = document.getElementById('discarded-items')
+
+  openedItemsElement.value = 0;
+  consumedItemsElement.value = 0;
+  discardedItemsElement.value = 0;
+
+  openedItemsElement.max = quantity;
+  consumedItemsElement.max = quantity;
+  discardedItemsElement.max = quantity;
+
+  // make sure that the sum of opened, consumed and spoiled items is less than or equal to the quantity
+  formElement.addEventListener('submit', function (event) {
+    const openedItems = parseInt(document.getElementById('opened-items').value);
+    const consumedItems = parseInt(document.getElementById('consumed-items').value);
+    const spoiledItems = parseInt(document.getElementById('discarded-items').value);
+
+    if (openedItems + consumedItems + spoiledItems > quantity) {
+      event.preventDefault();
+      alert('A soma dos itens abertos, consumidos e descartados deve ser menor ou igual à quantidade');
+    } else if (openedItems + consumedItems + spoiledItems == 0) {
+      event.preventDefault();
+    }
+  });
+});
+
+document.getElementById('edit-item-modal').querySelector('form').addEventListener("submit", editItem);
+
+document.getElementById('new-item-name').addEventListener('change', function (event) {
+  const datalist = document.getElementById('new-item-name');
+  const options = Array.from(document.getElementById('datalistOptions').children);
+
+  options.forEach((option) => {
+    console.log(option);
+    if (option.value === datalist.value) {
+      const duration = option.getAttribute("data-value");
+      document.getElementById('new-item-duration').value = duration;
+      return;
+    }
+  });
+});
+
+function editItem(e) {
+  // prevent default - we don't want the form to submit in the conventional way
+  e.preventDefault();
+
+  const listId = e.target.getAttribute("data-list-id");
+  const listElement = document.getElementById(listId);
+  let items;
+  let sortedItems;
+  let table;
+
+  if (listId === "foods-list") {
+    items = foodItems;
+    sortedItems = sortedFoodItems;
+    table = FOODS_TABLE;
+  } else if (listId === "medicines-list") {
+    items = medicineItems;
+    sortedItems = sortedMedicineItems;
+    table = MEDICINES_TABLE;
+  } else {
+    console.error("List not found");
+    console.log(listElement);
+  }
+
+  const id = Number(e.target.getAttribute("data-item-id"));
+  const openedItems = parseInt(document.getElementById('opened-items').value);
+  const consumedItems = parseInt(document.getElementById('consumed-items').value);
+  const discardedItems = parseInt(document.getElementById('discarded-items').value);
+
+  if (openedItems > 0) {
+    openItem(id, openedItems, items, table);
+  }
+
+  if (consumedItems > 0) {
+    consumeItem(id, consumedItems, items, table);
+  }
+
+  if (discardedItems > 0) {
+    discardItem(id, discardedItems, items, table);
+  }
+
+  displayData(listElement, items, sortedItems, table);
+}
+
+function openItem(id, quantity, items, table) {
+  const today = DateTime.now();
+
+  let expiringDate;
+  if (items[id].expiring_date < today) {
+    localStorage.setItem("expired_unopened_items", localStorage.getItem("expired_unopened_items") + quantity);
+    expiringDate = items[id].expiring_date;
+    // console.log('Opened expired item');
+  } else {
+    expiringDate = today.plus({days: items[id].duration}).endOf('day');
+    if (expiringDate > items[id].expiring_date) {
+      expiringDate = items[id].expiring_date;
+      // console.log('Opened item will expire before the duration');
+    } else {
+      // console.log('Opened item');
+    }
+  }
+
+  if (items[id].quantity > quantity) {
+    addData({
+      name: items[id].name,
+      quantity: quantity,
+      expiring_date: expiringDate.toISO(),
+      duration: items[id].duration,
+      date_opened: today.toISO(),
+      opened: true
+    }, table);
+
+    // let editedItem = { ...items[id] };
+    let editedItem = items[id];
+    editedItem.quantity -= quantity;
+    editData(editedItem, table);
+  } else {
+    let editedItem = items[id];
+    editedItem.expiring_date = expiringDate;
+    editedItem.date_opened = today;
+    editedItem.opened = true;
+    editData(editedItem, table);
+  }
+}
+
+function consumeItem(id, quantity, items, table) {
+  const today = DateTime.now();
+
+  if (items[id].expiring_date < today) {
+    localStorage.setItem("consumed_expired_items", localStorage.getItem("consumed_expired_items") + quantity);
+  } else {
+    localStorage.setItem("consumed_items", localStorage.getItem("consumed_items") + quantity);
+  }
+
+  if (items[id].quantity > quantity) {
+    // let editedItem = { ...items[id] };
+    let editedItem = items[id];
+    editedItem.quantity -= quantity;
+    editData(editedItem, table);
+  } else {
+    deleteData(id, table);
+  }
+}
+
+function discardItem(id, quantity, items, table) {
+  const today = DateTime.now();
+
+  if (items[id].expiring_date < today) {
+    localStorage.setItem("expired_discarded_items", localStorage.getItem("expired_discarded_items") + quantity);
+
+    if (items[id].opened) {
+      localStorage.setItem("expired_opened_items", localStorage.getItem("expired_opened_items") + quantity);
+    }
+  } else {
+    localStorage.setItem("consumed_items", localStorage.getItem("consumed_items") + quantity);
+  }
+
+  if (items[id].quantity > quantity) {
+    // let editedItem = { ...items[id] };
+    let editedItem = items[id];
+    editedItem.quantity -= quantity;
+    editData(editedItem, table);
+  } else {
+    deleteData(id, table);
+  }
+}
+
+function addItemFromForm(e) {
+  // prevent default - we don't want the form to submit in the conventional way
+  e.preventDefault();
+
+  // find which list the item should be added to
+  let listElement;
+  let items;
+  let sortedItems;
+  let table;
+  let history_table;
+
+  // get current active tab
+  const tab = document.querySelector('.nav-link.active').id;
+
+  if (tab === "foods-tab") {
+    listElement = foodsListElement;
+    items = foodItems;
+    sortedItems = sortedFoodItems;
+    table = FOODS_TABLE;
+    history_table = FOODS_HISTORY_TABLE;
+  } else if (tab === "medicines-tab") {
+    listElement = medicinesListElement;
+    items = medicineItems;
+    sortedItems = sortedMedicineItems;
+    table = MEDICINES_TABLE;
+    history_table = MEDICINES_HISTORY_TABLE;
+  } else {
+    console.error("Tab not found:", tab);
+  }
+
+  // grab the values entered into the form fields and store them in an object ready for being inserted into the DB
+  // const newItem = { title: titleInput.value, body: bodyInput.value };
+
+  const nameInput = document.getElementById("new-item-name");
+  const quantityInput = document.getElementById("new-item-quantity");
+  const expiringDateInput = document.getElementById("new-item-expiring-date");
+  const durationInput = document.getElementById("new-item-duration");
+  let expiringDate = DateTime.fromISO(expiringDateInput.value).endOf('day');
+
+  let duration;
+  if (durationInput.value === "") {
+    // calculate duration based on the expiring date
+    duration = Math.ceil(expiringDate.diff(DateTime.now(), 'days').days);
+  } else {
+    duration = durationInput.value;
+  }
+
+  addDataAndUpdateUI(
+    {
+      name: nameInput.value,
+      quantity: quantityInput.value,
+      expiring_date: expiringDate.toISO(),
+      duration: duration,
+      date_opened: null,
+      opened: false
+    },
+    listElement, items, sortedItems, table);
+
+  addHistoryData(nameInput.value, durationInput.value, history_table);
+
+  nameInput.value = "";
+  quantityInput.value = "";
+  expiringDateInput.value = "";
+  durationInput.value = "";
+}
+
+// detect when export-products-input is clicked and export the products table
+document.getElementById('export-products-input').addEventListener('click', function (e) {
+  if (sortedFoodItems.length === 0 && sortedMedicineItems.length === 0) {
+    alert('{{ page.no_items_to_export }}');
+    return;
+  }
+
+  exportToJson(db)
+  .then(result => {
+    const blob = new Blob([result], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'expiring_products.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    a.remove();
+  })
+  .catch(error => {
+    console.error('Something went wrong during export:', error);
+  })
+});
+
+// detect when import-products-input is clicked and import the products table
+document.getElementById('import-products-input').addEventListener('change', function (e) {
+  const file = e.target.files[0];
+  const reader = new FileReader();
+
+  reader.onload = function (e) {
+    const result = e.target.result;
+    clearDatabase(db)
+    .then(() => importFromJson(db, result))
+    .then(() => {
+      console.log('Successfully cleared database and imported data')
+      displayData(foodsListElement, foodItems, sortedFoodItems, FOODS_TABLE);
+      displayData(medicinesListElement, medicineItems, sortedMedicineItems, MEDICINES_TABLE);
+    })
+    .catch(error => {
+      console.error('Could not clear & import database:', error)
+    })
+  };
+
+  reader.readAsText(file);
+});

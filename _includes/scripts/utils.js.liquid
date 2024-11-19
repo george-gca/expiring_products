@@ -1,0 +1,13 @@
+function sortItems(items, sortedItems) {
+  sortedItems.length = 0;
+  sortedItems.push(...Object.values(items));
+  // sort the items by expiring date, opened and quantity
+  sortedItems.sort((a, b) => a.expiring_date - b.expiring_date || b.opened - a.opened || b.quantity - a.quantity);
+}
+
+// Register service worker to control making site work offline
+if('serviceWorker' in navigator) {
+  navigator.serviceWorker
+  .register('/assets/js/sw.js')
+  .then(() => console.log('Service Worker Registered'));
+}
