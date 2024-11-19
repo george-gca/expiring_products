@@ -1,0 +1,40 @@
+<div class="modal fade" id="add-item-modal" tabindex="-1" aria-labelledby="add-item-modal-title" aria-hidden="true">
+  <div class="modal-dialog">
+    <form>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="add-item-modal-title">{{ page.add_item }}</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ page.close }}"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-floating mb-3">
+            <input class="form-control" list="datalistOptions" id="new-item-name" name="new-item-name" required>
+            <datalist id="datalistOptions"></datalist>
+            <label for="new-item-name">{{ page.item_name }}</label>
+          </div>
+
+          <div class="form-floating mb-3">
+            <input type="number" min="0" class="form-control" id="new-item-quantity" name="new-item-quantity" required>
+            <label for="new-item-quantity">{{ page.quantity }}</label>
+          </div>
+
+          <div class="form-floating mb-3">
+            <input type="date" class="form-control" id="new-item-expiring-date" name="new-item-expiring-date" required>
+            <label for="new-item-expiring-date">{{ page.expire_in }}</label>
+          </div>
+
+          <div class="form-floating mb-3">
+            <input type="number" min="0" class="form-control" id="new-item-duration" name="new-item-duration">
+            <label for="new-item-duration">{{ page.duration }}</label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <!-- TODO: remove data-bs-dismiss so it only closes if the form submition was successfull -->
+          <button type="submit" class="btn btn-primary" data-bs-dismiss="modal"><i class="fa-solid fa-check"></i></button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

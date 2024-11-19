@@ -1,0 +1,46 @@
+<div class="modal fade" id="edit-item-modal" tabindex="-1" aria-labelledby="edit-item-modal-title" aria-hidden="true">
+  <div class="modal-dialog">
+    <form>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="edit-item-modal-title"></h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ page.close }}"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="basic-url" class="form-label">{{ page.opened_items }}</label>
+            <div class="input-group">
+              <button class="btn btn-outline-secondary" type="button" id="minus-1-opened-item" onclick="this.parentNode.querySelector('input[type=number]').stepDown()"><i class="fa-solid fa-minus"></i></button>
+              <input type="number" class="form-control" min="0" value="0" id="opened-items" name="opened-items">
+              <button class="btn btn-outline-secondary" type="button" id="plus-1-opened-item" onclick="this.parentNode.querySelector('input[type=number]').stepUp()"><i class="fa-solid fa-plus"></i></button>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="basic-url" class="form-label">{{ page.consumed_items }}</label>
+            <div class="input-group">
+              <button class="btn btn-outline-secondary" type="button" id="minus-1-consumed-item" onclick="this.parentNode.querySelector('input[type=number]').stepDown()"><i class="fa-solid fa-minus"></i></button>
+              <input type="number" class="form-control" min="0" value="0" id="consumed-items" name="consumed-items">
+              <button class="btn btn-outline-secondary" type="button" id="plus-1-consumed-item" onclick="this.parentNode.querySelector('input[type=number]').stepUp()"><i class="fa-solid fa-plus"></i></button>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="basic-url" class="form-label">{{ page.discarded_items }}</label>
+            <div class="input-group">
+              <button class="btn btn-outline-secondary" type="button" id="minus-1-discarded-item" onclick="this.parentNode.querySelector('input[type=number]').stepDown()"><i class="fa-solid fa-minus"></i></button>
+              <input type="number" class="form-control" min="0" value="0" id="discarded-items" name="discarded-items">
+              <button class="btn btn-outline-secondary" type="button" id="plus-1-discarded-item" onclick="this.parentNode.querySelector('input[type=number]').stepUp()"><i class="fa-solid fa-plus"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <!-- TODO: remove data-bs-dismiss so it only closes if the form submition was successfull -->
+          <button type="submit" class="btn btn-primary" id="confirm-edit-button" data-bs-dismiss="modal"><i class="fa-solid fa-check"></i></button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
