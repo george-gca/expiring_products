@@ -11,3 +11,60 @@ if('serviceWorker' in navigator) {
   .register('/assets/js/sw.js')
   .then(() => console.log('Service Worker Registered'));
 }
+
+const everyDay = (callback) => {
+  const now = new Date();
+  setTimeout(async () =>
+    {
+      await callback();
+      everyDay(callback);
+    }
+    , 24 * 3600000 - now.getHours() * 3600000 - now.getMinutes() * 60000 - now.getSeconds() * 1000 - now.getMilliseconds()
+  )
+};
+
+function checkExpiryDate() {
+  // check for expired items in sortedFoodItems and sortedMedicineItems
+  const now = DateTime.now();
+
+  sortedFoodItems.forEach((item, idx) => {
+    if (DateTime.fromISO(item.expiring_date) < now) {
+      // mark item inside #foods-list as danger
+      const foodItem = document.getElementById('foods-list').children[idx].children[0];
+      if (foodItem.classList.contains('list-group-item-warning')) {
+        foodItem.classList.remove('list-group-item-warning');
+      }
+      foodItem.classList.add('list-group-item-danger');
+    } else {
+      const diffDays = Interval.fromDateTimes(now, item.expiring_date).length('days');
+      if (diffDays <= 3) {
+        // less than 3 days left, mark item as warning
+        const foodItem = document.getElementById('foods-list').children[idx].children[0];
+        foodItem.classList.add('list-group-item-warning');
+      } else {
+        // since the items are sorted by expiry date, we can break the loop
+        return;
+      }
+    }
+  });
+
+  sortedMedicineItems.forEach((item, idx) => {
+    if (DateTime.fromISO(item.expiring_date) < now) {
+      // mark item inside #foods-list as danger
+      const listItem = document.getElementById('medicines-list').children[idx].children[0];
+      listItem.classList.add('list-group-item-danger');
+    } else {
+      const diffDays = Interval.fromDateTimes(now, item.expiring_date).length('days');
+      if (diffDays <= 3) {
+        // less than 3 days left, mark item as warning
+        const listItem = document.getElementById('medicines-list').children[idx].children[0];
+        listItem.classList.add('list-group-item-warning');
+      } else {
+        // since the items are sorted by expiry date, we can break the loop
+        return;
+      }
+    }
+  });
+}
+
+everyDay(checkExpiryDate);

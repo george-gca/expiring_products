@@ -14,6 +14,8 @@ openRequest.addEventListener("success", () => {
   // store the opened database object in the db variable. This is used a lot below
   db = openRequest.result;
 
+  // createFakeData();
+
   // run the displayData function to display the items already in the IDB
   displayData(foodsListElement, foodItems, sortedFoodItems, FOODS_TABLE);
   displayData(medicinesListElement, medicineItems, sortedMedicineItems, MEDICINES_TABLE);
@@ -221,6 +223,7 @@ function displayData(listElement, items, sortedItems, table) {
 
         // if there are no more cursor items to iterate through, say so
         console.log("All items from", table, "displayed");
+        checkExpiryDate();
       }
     }
   });
@@ -283,4 +286,11 @@ function deleteData(id, table) {
     //   listElement.appendChild(listItem);
     // }
   });
+}
+
+function createFakeData() {
+  const now = DateTime.now();
+  addData({name: "Apple", quantity: 2, expiring_date: now.minus({days: 1}).toISO(), duration: 1, date_opened: now.minus({days: 2}).toISO(), opened: true}, FOODS_TABLE);
+  addData({name: "Banana", quantity: 3, expiring_date: now.plus({days: 1}).toISO(), duration: 7, date_opened: null, opened: false}, FOODS_TABLE);
+  addData({name: "Orange", quantity: 1, expiring_date: now.plus({days: 4}).toISO(), duration: 7, date_opened: null, opened: false}, FOODS_TABLE);
 }
