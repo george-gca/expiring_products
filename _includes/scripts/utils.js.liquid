@@ -12,6 +12,7 @@ if('serviceWorker' in navigator) {
   .then(() => console.log('Service Worker Registered'));
 }
 
+// run a callback every day
 const everyDay = (callback) => {
   const now = new Date();
   setTimeout(async () =>
@@ -23,48 +24,58 @@ const everyDay = (callback) => {
   )
 };
 
-function checkExpiryDate() {
-  // check for expired items in sortedFoodItems and sortedMedicineItems
+function checkExpiryDateInList(item, idx) {
   const now = DateTime.now();
 
-  sortedFoodItems.forEach((item, idx) => {
-    if (DateTime.fromISO(item.expiring_date) < now) {
-      // mark item inside #foods-list as danger
-      const foodItem = document.getElementById('foods-list').children[idx].children[0];
-      if (foodItem.classList.contains('list-group-item-warning')) {
-        foodItem.classList.remove('list-group-item-warning');
-      }
-      foodItem.classList.add('list-group-item-danger');
-    } else {
-      const diffDays = Interval.fromDateTimes(now, item.expiring_date).length('days');
-      if (diffDays <= 3) {
-        // less than 3 days left, mark item as warning
-        const foodItem = document.getElementById('foods-list').children[idx].children[0];
-        foodItem.classList.add('list-group-item-warning');
-      } else {
-        // since the items are sorted by expiry date, we can break the loop
-        return;
-      }
-    }
-  });
+  if (DateTime.fromISO(item.expiring_date) < now) {
+    // mark item inside list as danger
+    const listItem = document.getElementById(this.listId).children[idx].children[0];
 
-  sortedMedicineItems.forEach((item, idx) => {
-    if (DateTime.fromISO(item.expiring_date) < now) {
-      // mark item inside #foods-list as danger
-      const listItem = document.getElementById('medicines-list').children[idx].children[0];
-      listItem.classList.add('list-group-item-danger');
-    } else {
-      const diffDays = Interval.fromDateTimes(now, item.expiring_date).length('days');
-      if (diffDays <= 3) {
-        // less than 3 days left, mark item as warning
-        const listItem = document.getElementById('medicines-list').children[idx].children[0];
-        listItem.classList.add('list-group-item-warning');
-      } else {
-        // since the items are sorted by expiry date, we can break the loop
-        return;
-      }
+    if (listItem.classList.contains('list-group-item-danger')) {
+      return false;
     }
-  });
+
+    if (listItem.classList.contains('list-group-item-warning')) {
+      listItem.classList.remove('list-group-item-warning');
+    }
+
+    listItem.classList.add('list-group-item-danger');
+
+  } else {
+    const diffDays = Interval.fromDateTimes(now, item.expiring_date).length('days');
+
+    if (diffDays <= 3) {
+      // less than 3 days left, mark item as warning
+      const listItem = document.getElementById(this.listId).children[idx].children[0];
+      if (listItem.classList.contains('list-group-item-warning')) {
+        return false;
+      }
+
+      listItem.classList.add('list-group-item-warning');
+
+    } else {
+      // since the items are sorted by expiry date, we can break the loop
+      return true;
+    }
+  }
+  return false;
 }
 
-everyDay(checkExpiryDate);
+function checkExpiryDates() {
+  // check for expired items in sortedFoodItems and sortedMedicineItems
+  sortedFoodItems.some(
+    // 1st Argument to forEach: callback
+    checkExpiryDateInList,
+    // 2nd Argument to forEach: thisArg
+    { listId: 'foods-list' }
+  );
+
+  sortedMedicineItems.some(
+    // 1st Argument to forEach: callback
+    checkExpiryDateInList,
+    // 2nd Argument to forEach: thisArg
+    { listId: 'medicines-list' }
+  );
+}
+
+everyDay(checkExpiryDates);
