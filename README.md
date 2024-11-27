@@ -51,4 +51,3 @@ Since all information is stored locally, one can simply open the [web applicatio
 
 - statistics tab
 - improve UI
-- add prettier support
