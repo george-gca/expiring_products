@@ -28,6 +28,7 @@ exclude:
   - readme_img/
   - LICENSE
   - README.md
+  - run_on_code_changed.sh
 
 include: ["_pages"]
 
