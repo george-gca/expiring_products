@@ -13,7 +13,7 @@ export function exportToJson(idbDatabase) {
     } else {
       const transaction = idbDatabase.transaction(
         idbDatabase.objectStoreNames,
-        "readonly"
+        "readonly",
       );
 
       transaction.addEventListener("error", reject);
@@ -59,7 +59,7 @@ export function importFromJson(idbDatabase, json) {
   return new Promise((resolve, reject) => {
     const transaction = idbDatabase.transaction(
       idbDatabase.objectStoreNames,
-      "readwrite"
+      "readwrite",
     );
     transaction.addEventListener("error", reject);
 
@@ -94,7 +94,7 @@ export function clearDatabase(idbDatabase) {
   return new Promise((resolve, reject) => {
     const transaction = idbDatabase.transaction(
       idbDatabase.objectStoreNames,
-      "readwrite"
+      "readwrite",
     );
     transaction.addEventListener("error", reject);
 
