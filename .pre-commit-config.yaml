@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: format-code
+        name: Format code files with Prettier
+        entry: bash run_on_code_changed.sh
+        language: system
+        types_or: [css, html, javascript, json, sass, scss, yaml]
+        verbose: true
