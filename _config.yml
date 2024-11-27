@@ -25,6 +25,7 @@ exclude:
   - .github/
   - .gitignore
   - .ruby-version
+  - readme_img/
   - LICENSE
   - README.md
 
