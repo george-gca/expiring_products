@@ -10,7 +10,15 @@
 
   <h1>{{ page.products_to_expire }}</h1>
 
-  <ul class="nav nav-tabs" id="tabs" role="tablist">
+  <div id="login-container">
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
+    <button id="login-btn">Login</button>
+    <button id="signup-btn">Sign Up</button>
+    <button id="logout-btn" style="display:none;">Logout</button>
+  </div>
+
+  <ul class="nav nav-tabs" id="tabs" role="tablist" style="display:none;">
     <li class="nav-item" role="presentation">
       <button class="nav-link active" id="foods-tab" data-bs-toggle="tab" data-bs-target="#foods-tab-pane" type="button" role="tab" aria-controls="foods-tab-pane" aria-selected="true">{{ page.foods }}</button>
     </li>
@@ -22,7 +30,7 @@
     </li>
   </ul>
 
-  <div class="tab-content" id="tabsContents">
+  <div class="tab-content" id="tabsContents" style="display:none;">
     {% include foods_tab.liquid %}
     {% include medicines_tab.liquid %}
     {% include settings_tab.liquid %}
