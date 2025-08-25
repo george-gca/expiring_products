@@ -23,41 +23,34 @@ document.getElementById('add-item-modal').addEventListener('shown.bs.modal', fun
     datalistOptions.removeChild(datalistOptions.firstChild);
   }
 
-  // add the items from the history to the datalist
+  // Determine which history to load
   const tab = document.querySelector('.nav-link.active').id;
-  let table;
+  let historyTable;
 
   if (tab === "foods-tab") {
-    table = FOODS_HISTORY_TABLE;
+    historyTable = FOODS_HISTORY_TABLE;
   } else if (tab === "medicines-tab") {
-    table = MEDICINES_HISTORY_TABLE;
+    historyTable = MEDICINES_HISTORY_TABLE;
   } else {
-    console.error("Tab not found:", tab);
+    return; // Exit if no valid tab is active
   }
 
-  // open our object store and then get a cursor - which iterates through all the
-  // different data items in the store
-  let objectStore;
-  try {
-    objectStore = db.transaction([table]).objectStore(table);
-  } catch (error) {
-    console.error("Error opening object store", table, ":", error);
-  }
+  if (!currentUser) return; // Exit if user is not logged in
 
-  objectStore.openCursor().addEventListener("success", (e) => {
-    // get a reference to the cursor
-    const cursor = e.target.result;
-
-    // if there is still another data item to iterate through, keep running this code
-    if (cursor) {
-      const option = document.createElement("option");
-      datalistOptions.appendChild(option);
-      option.value = cursor.value.name;
-      option.setAttribute("data-value", cursor.value.duration);
-      // iterate to the next item in the cursor
-      cursor.continue();
-    }
-  });
+  // Fetch history from Firestore
+  db.collection('households').doc(currentUser.uid).collection(historyTable).get()
+    .then(querySnapshot => {
+      querySnapshot.forEach(doc => {
+        const item = doc.data();
+        const option = document.createElement("option");
+        datalistOptions.appendChild(option);
+        option.value = item.name;
+        option.setAttribute("data-value", item.duration);
+      });
+    })
+    .catch(error => {
+      console.error("Error getting history documents: ", error);
+    });
 });
 
 document.getElementById('add-item-modal').querySelector('form').addEventListener("submit", addItemFromForm);
@@ -171,8 +164,6 @@ function editItem(e) {
   if (discardedItems > 0) {
     discardItem(id, discardedItems, items, table);
   }
-
-  displayData(listElement, items, sortedItems, table);
 }
 
 function openItem(id, quantity, items, table) {
@@ -305,16 +296,14 @@ function addItemFromForm(e) {
     duration = durationInput.value;
   }
 
-  addDataAndUpdateUI(
-    {
-      name: nameInput.value,
-      quantity: quantityInput.value,
-      expiring_date: expiringDate.toISO(),
-      duration: duration,
-      date_opened: null,
-      opened: false
-    },
-    listElement, items, sortedItems, table);
+  addData({
+    name: nameInput.value,
+    quantity: quantityInput.value,
+    expiring_date: expiringDate.toISO(),
+    duration: duration,
+    date_opened: null,
+    opened: false
+  }, table);
 
   addHistoryData(nameInput.value, durationInput.value, history_table);
 

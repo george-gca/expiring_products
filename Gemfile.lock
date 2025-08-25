@@ -11,6 +11,7 @@ GEM
       addressable
     cssminify2 (2.1.0)
     csv (3.3.5)
+    dotenv (2.8.1)
     em-websocket (0.5.3)
       eventmachine (>= 0.12.9)
       http_parser.rb (~> 0)
@@ -212,6 +213,7 @@ DEPENDENCIES
   jekyll
   jekyll-3rd-party-libraries
   jekyll-animate-elements
+  jekyll-dotenv
   jekyll-minifier
   jekyll-polyglot
   nokogiri

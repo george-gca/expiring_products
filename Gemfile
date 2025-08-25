@@ -3,6 +3,7 @@ group :jekyll_plugins do
     gem 'jekyll'
     gem 'jekyll-3rd-party-libraries'
     gem 'jekyll-animate-elements'
+    gem 'jekyll-dotenv'
     gem 'jekyll-minifier'
     gem 'jekyll-polyglot'
 end

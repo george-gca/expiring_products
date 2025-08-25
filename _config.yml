@@ -39,6 +39,7 @@ include: ["_pages"]
 plugins:
   - jekyll-3rd-party-libraries
   - jekyll-animate-elements
+  - jekyll-dotenv
   - jekyll-minifier
   - jekyll-polyglot
 
@@ -64,6 +65,24 @@ third_party_libraries:
       css: "https://cdn.jsdelivr.net/npm/bootstrap@{{version}}/dist/css/bootstrap.min.css"
       js: "https://cdn.jsdelivr.net/npm/bootstrap@{{version}}/dist/js/bootstrap.bundle.min.js"
     version: "5.3.3"
+  firebase-app:
+    integrity:
+      js: "sha384-..."
+    url:
+      js: "https://www.gstatic.com/firebasejs/{{version}}/firebase-app-compat.js"
+    version: "9.6.7"
+  firebase-auth:
+    integrity:
+      js: "sha384-..."
+    url:
+      js: "https://www.gstatic.com/firebasejs/{{version}}/firebase-auth-compat.js"
+    version: "9.6.7"
+  firebase-firestore:
+    integrity:
+      js: "sha384-..."
+    url:
+      js: "https://www.gstatic.com/firebasejs/{{version}}/firebase-firestore-compat.js"
+    version: "9.6.7"
   font-awesome:
     integrity:
       css: "sha256-XfA0ppGOANs88Ds+9FqVLy3xIGzT/25K/VLmRRxE9ow="
