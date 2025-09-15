@@ -20,6 +20,7 @@ jekyll-minifier:
 # Jekyll Animate Elements
 animation:
   enabled: true
+  selector: "audio, blockquote, div.card, div.highlighter-rouge, div.news, div.repositories, div.row, div.social, div.tag-category-list, figure, h2, h3, input, ol, p, tr, ul, video"
 
 # -----------------------------------------------------------------------------
 # Build settings
