@@ -91,6 +91,12 @@ third_party_libraries:
       css: "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@{{version}}/css/fontawesome.min.css"
       js: "https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@{{version}}/js/all.min.js"
     version: "6.6.0"
+  fuse:
+    integrity:
+      js: "sha256-Igk09XYTSwRm2Z94bOIbE/h9MZsemuYzxV5o9vQcPJ0="
+    url:
+      js: "https://cdn.jsdelivr.net/npm/fuse.js@{{version}}/dist/fuse.min.js"
+    version: "7.1.0"
   google_fonts:
     url:
       fonts: "https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"

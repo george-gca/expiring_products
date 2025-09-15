@@ -25,17 +25,25 @@ function addData(newItem, table) {
 function setupRealtimeListener(listElement, sortedItems, table) {
   if (!currentUser) return;
 
+  const fuseOptions = {
+    keys: ['name'],
+    threshold: 0.4,
+    isCaseSensitive: false,
+  };
+
+  // Get a reference to the search container for this tab
+  const searchContainer = document.getElementById(`${table}-search-container`);
+
   db.collection('households').doc(currentUser.uid).collection(table)
     .orderBy("expiring_date", "asc")
     .onSnapshot(querySnapshot => {
       let currentItemsObject;
-
-      // Determine which global object to update
+      // Clear and re-assign the global variable
       if (table === 'foods') {
-        foodItems = {}; // Clear and re-assign the global variable
+        foodItems = {};
         currentItemsObject = foodItems;
       } else {
-        medicineItems = {}; // Clear and re-assign the global variable
+        medicineItems = {};
         currentItemsObject = medicineItems;
       }
 
@@ -54,15 +62,32 @@ function setupRealtimeListener(listElement, sortedItems, table) {
         };
       });
 
-      if (querySnapshot.empty) {
+      sortItems(currentItemsObject, sortedItems);
+
+      // Create or update the Fuse.js index for the correct tab
+      if (table === 'foods') {
+        foodsFuse = new Fuse(sortedItems, fuseOptions);
+      } else {
+        medicinesFuse = new Fuse(sortedItems, fuseOptions);
+      }
+
+      // Render the full list initially
+      if (sortedItems.length === 0) {
+        // Hide search bar if list is empty
+        if (searchContainer) searchContainer.style.display = 'none';
+
         const li = document.createElement("li");
         li.classList.add("list-group-item");
         li.textContent = "{{ page.no_items }}";
         listElement.appendChild(li);
       } else {
-        sortItems(currentItemsObject, sortedItems);
+        // Show search bar if list has items
+        if (searchContainer) searchContainer.style.display = '';
+
         for (const item of sortedItems) {
           const li = document.createElement("li");
+          // Add a unique ID to each list item
+          li.id = `item-${item.id}`;
           li.setAttribute("data-item-id", item.id);
           li.innerHTML = `
             <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-bs-toggle="modal" data-bs-target="#edit-item-modal" data-bs-id="${item.id}">
@@ -84,7 +109,8 @@ function setupRealtimeListener(listElement, sortedItems, table) {
       checkExpiryDates();
     }, error => {
       console.error("Firestore listener error: ", error);
-    });
+    }
+  );
 }
 
 function editData(editedItem, table) {
