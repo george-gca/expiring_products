@@ -8,8 +8,7 @@ function sortItems(items, sortedItems) {
 // Register service worker to control making site work offline
 if('serviceWorker' in navigator) {
   navigator.serviceWorker
-  .register('/assets/js/sw.js')
-  .then(() => console.log('Service Worker Registered'));
+  .register('/assets/js/sw.js');
 }
 
 // run a callback every day

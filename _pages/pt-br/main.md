@@ -15,6 +15,7 @@ export_data: Exportar dados
 foods: Alimentos
 import_data: Importar dados
 item_name: Nome
+logout: Sair
 medicines: Medicamentos
 no_items: Não há items aqui.
 no_items_to_export: Não há items para exportar.
