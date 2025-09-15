@@ -39,6 +39,7 @@ include: ["_pages"]
 plugins:
   - jekyll-3rd-party-libraries
   - jekyll-animate-elements
+  - jekyll-cache-bust
   - jekyll-dotenv
   - jekyll-minifier
   - jekyll-polyglot

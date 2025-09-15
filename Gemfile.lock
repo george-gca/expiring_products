@@ -85,6 +85,8 @@ GEM
       webrick (~> 1.7)
     jekyll-animate-elements (0.0.4)
       jekyll (>= 3.6, < 5.0)
+    jekyll-cache-bust (0.0.1)
+      jekyll (>= 3.6, < 5.0)
     jekyll-dotenv (0.2.0)
       dotenv (~> 2.7)
       jekyll (~> 4)
@@ -216,6 +218,7 @@ DEPENDENCIES
   jekyll
   jekyll-3rd-party-libraries
   jekyll-animate-elements
+  jekyll-cache-bust
   jekyll-dotenv
   jekyll-minifier
   jekyll-polyglot
