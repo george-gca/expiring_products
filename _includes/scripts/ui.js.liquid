@@ -55,10 +55,7 @@ document.getElementById('add-item-modal').addEventListener('shown.bs.modal', fun
 
 document.getElementById('add-item-modal').querySelector('form').addEventListener("submit", addItemFromForm);
 
-// finds when the edit item modal is shown and update the modal with the item data
-// also update needed information
 document.getElementById('edit-item-modal').addEventListener('show.bs.modal', function (event) {
-  // get the button that triggered the modal
   const button = event.relatedTarget;
   const listElementId = button.parentElement.parentElement.id;
   let items;
@@ -69,9 +66,10 @@ document.getElementById('edit-item-modal').addEventListener('show.bs.modal', fun
     items = medicineItems;
   }
 
-  // update the modal with the item data
   const id = button.getAttribute('data-bs-id');
   const item = items[id];
+
+  if (!item) return;
 
   const name = item.name;
   const quantity = item.quantity;
@@ -82,31 +80,31 @@ document.getElementById('edit-item-modal').addEventListener('show.bs.modal', fun
 
   document.getElementById('edit-item-modal-title').textContent = '{{ page.edit }} ' + name;
 
-  const openedItemsElement = document.getElementById('opened-items')
-  const consumedItemsElement = document.getElementById('consumed-items')
-  const discardedItemsElement = document.getElementById('discarded-items')
+  const openedItemsElement = document.getElementById('opened-items');
+  const consumedItemsElement = document.getElementById('consumed-items');
+  const discardedItemsElement = document.getElementById('discarded-items');
 
+  // Reset values and set initial max
   openedItemsElement.value = 0;
   consumedItemsElement.value = 0;
   discardedItemsElement.value = 0;
-
   openedItemsElement.max = quantity;
   consumedItemsElement.max = quantity;
   discardedItemsElement.max = quantity;
 
-  // make sure that the sum of opened, consumed and spoiled items is less than or equal to the quantity
-  formElement.addEventListener('submit', function (event) {
-    const openedItems = parseInt(document.getElementById('opened-items').value);
-    const consumedItems = parseInt(document.getElementById('consumed-items').value);
-    const spoiledItems = parseInt(document.getElementById('discarded-items').value);
+  const updateMaxValues = () => {
+    const openedVal = parseInt(openedItemsElement.value) || 0;
+    const consumedVal = parseInt(consumedItemsElement.value) || 0;
+    const discardedVal = parseInt(discardedItemsElement.value) || 0;
 
-    if (openedItems + consumedItems + spoiledItems > quantity) {
-      event.preventDefault();
-      alert('A soma dos itens abertos, consumidos e descartados deve ser menor ou igual à quantidade');
-    } else if (openedItems + consumedItems + spoiledItems == 0) {
-      event.preventDefault();
-    }
-  });
+    openedItemsElement.max = quantity - (consumedVal + discardedVal);
+    consumedItemsElement.max = quantity - (openedVal + discardedVal);
+    discardedItemsElement.max = quantity - (openedVal + consumedVal);
+  };
+
+  openedItemsElement.addEventListener('input', updateMaxValues);
+  consumedItemsElement.addEventListener('input', updateMaxValues);
+  discardedItemsElement.addEventListener('input', updateMaxValues);
 });
 
 document.getElementById('edit-item-modal').querySelector('form').addEventListener("submit", editItem);
@@ -116,7 +114,6 @@ document.getElementById('new-item-name').addEventListener('change', function (ev
   const options = Array.from(document.getElementById('datalistOptions').children);
 
   options.forEach((option) => {
-    console.log(option);
     if (option.value === datalist.value) {
       const duration = option.getAttribute("data-value");
       document.getElementById('new-item-duration').value = duration;
@@ -130,28 +127,41 @@ function editItem(e) {
   e.preventDefault();
 
   const listId = e.target.getAttribute("data-list-id");
-  const listElement = document.getElementById(listId);
-  let items;
-  let sortedItems;
-  let table;
+  const id = e.target.getAttribute("data-item-id");
+  let items, table;
 
   if (listId === "foods-list") {
     items = foodItems;
-    sortedItems = sortedFoodItems;
     table = FOODS_TABLE;
   } else if (listId === "medicines-list") {
     items = medicineItems;
-    sortedItems = sortedMedicineItems;
     table = MEDICINES_TABLE;
-  } else {
-    console.error("List not found");
-    console.log(listElement);
   }
 
-  const id = Number(e.target.getAttribute("data-item-id"));
+  const item = items[id];
+  if (!item) {
+    console.error("Item not found for editing!");
+    return;
+  }
+
   const openedItems = parseInt(document.getElementById('opened-items').value);
   const consumedItems = parseInt(document.getElementById('consumed-items').value);
   const discardedItems = parseInt(document.getElementById('discarded-items').value);
+  const totalActioned = openedItems + consumedItems + discardedItems;
+
+  if (totalActioned > item.quantity) {
+    alert('The sum of opened, consumed, and discarded items cannot be greater than the available quantity.');
+    return; // Stop the function before any database calls
+  }
+
+  if (totalActioned === 0) {
+    // If no changes are made, we can just close the modal without an error
+    // To get the modal instance and hide it:
+    const modalElement = document.getElementById('edit-item-modal');
+    const modalInstance = bootstrap.Modal.getInstance(modalElement);
+    modalInstance.hide();
+    return;
+  }
 
   if (openedItems > 0) {
     openItem(id, openedItems, items, table);
@@ -168,85 +178,145 @@ function editItem(e) {
 
 function openItem(id, quantity, items, table) {
   const today = DateTime.now();
+  const itemToOpen = items[id];
+  const originalItemRef = db.collection('households').doc(currentUser.uid).collection(table).doc(id);
 
+  // 1. Calculate the new expiration date
   let expiringDate;
-  if (items[id].expiring_date < today) {
-    localStorage.setItem("expired_unopened_items", localStorage.getItem("expired_unopened_items") + quantity);
-    expiringDate = items[id].expiring_date;
-    // console.log('Opened expired item');
+  if (itemToOpen.expiring_date < today) {
+    expiringDate = itemToOpen.expiring_date;
   } else {
-    expiringDate = today.plus({days: items[id].duration}).endOf('day');
-    if (expiringDate > items[id].expiring_date) {
-      expiringDate = items[id].expiring_date;
-      // console.log('Opened item will expire before the duration');
-    } else {
-      // console.log('Opened item');
-    }
+    const newExpDate = today.plus({ days: itemToOpen.duration }).endOf('day');
+    expiringDate = newExpDate > itemToOpen.expiring_date ? itemToOpen.expiring_date : newExpDate;
   }
+  const expiringDateISO = expiringDate.toISO();
 
-  if (items[id].quantity > quantity) {
-    addData({
-      name: items[id].name,
-      quantity: quantity,
-      expiring_date: expiringDate.toISO(),
-      duration: items[id].duration,
-      date_opened: today.toISO(),
-      opened: true
-    }, table);
+  // 2. Query for a matching item *before* the transaction
+  const query = db.collection('households').doc(currentUser.uid).collection(table)
+    .where('name', '==', itemToOpen.name)
+    .where('opened', '==', true)
+    .where('expiring_date', '==', expiringDateISO)
+    .limit(1);
 
-    // let editedItem = { ...items[id] };
-    let editedItem = items[id];
-    editedItem.quantity -= quantity;
-    editData(editedItem, table);
-  } else {
-    let editedItem = items[id];
-    editedItem.expiring_date = expiringDate;
-    editedItem.date_opened = today;
-    editedItem.opened = true;
-    editData(editedItem, table);
-  }
+  query.get().then(matchingItemsSnapshot => {
+    // 3. Run the database updates inside a safe transaction
+    return db.runTransaction(async (transaction) => {
+      // --- ALL READS MUST HAPPEN FIRST ---
+      const originalDoc = await transaction.get(originalItemRef);
+      let existingOpenedItemDoc = null;
+      if (!matchingItemsSnapshot.empty) {
+        existingOpenedItemDoc = await transaction.get(matchingItemsSnapshot.docs[0].ref);
+      }
+
+      // --- ALL WRITES HAPPEN AFTER THE READS ---
+      if (!originalDoc.exists) {
+        throw "Original item document does not exist!";
+      }
+      const originalData = originalDoc.data();
+
+      // Perform write on the original (unopened) item
+      if (originalData.quantity > quantity) {
+        transaction.update(originalItemRef, { quantity: originalData.quantity - quantity });
+      } else {
+        transaction.delete(originalItemRef);
+      }
+
+      // Perform write on the opened item (either update or create)
+      if (existingOpenedItemDoc && existingOpenedItemDoc.exists) {
+        // MATCH FOUND: Update the existing opened item
+        const newQuantity = existingOpenedItemDoc.data().quantity + quantity;
+        transaction.update(existingOpenedItemDoc.ref, { quantity: newQuantity });
+      } else {
+        // NO MATCH: Create a new opened item
+        const newItemRef = db.collection('households').doc(currentUser.uid).collection(table).doc();
+        transaction.set(newItemRef, {
+          name: itemToOpen.name,
+          quantity: quantity,
+          expiring_date: expiringDateISO,
+          duration: itemToOpen.duration,
+          date_opened: today.toISO(),
+          opened: true
+        });
+      }
+    });
+  }).then(() => {
+    // Open item transaction successfully committed!
+  }).catch((error) => {
+    console.error("Open item transaction failed: ", error);
+  });
 }
 
 function consumeItem(id, quantity, items, table) {
   const today = DateTime.now();
+  const itemToConsume = items[id];
+  const itemRef = db.collection('households').doc(currentUser.uid).collection(table).doc(id);
+  const statsRef = db.collection('statistics').doc(currentUser.uid);
 
-  if (items[id].expiring_date < today) {
-    localStorage.setItem("consumed_expired_items", localStorage.getItem("consumed_expired_items") + quantity);
-  } else {
-    localStorage.setItem("consumed_items", localStorage.getItem("consumed_items") + quantity);
-  }
+  return db.runTransaction(async (transaction) => {
+    const itemDoc = await transaction.get(itemRef);
+    if (!itemDoc.exists) {
+      throw "Item to consume does not exist!";
+    }
 
-  if (items[id].quantity > quantity) {
-    // let editedItem = { ...items[id] };
-    let editedItem = items[id];
-    editedItem.quantity -= quantity;
-    editData(editedItem, table);
-  } else {
-    deleteData(id, table);
-  }
+    let statField;
+    if (itemToConsume.expiring_date < today) {
+      statField = `${table}_consumed_expired_items`; // e.g., "foods_consumed_expired_items"
+    } else {
+      statField = `${table}_consumed_items`; // e.g., "medicines_consumed_items"
+    }
+
+    transaction.set(statsRef, {
+      [statField]: firebase.firestore.FieldValue.increment(quantity)
+    }, { merge: true });
+
+    if (itemDoc.data().quantity > quantity) {
+      const newQuantity = itemDoc.data().quantity - quantity;
+      transaction.update(itemRef, { quantity: newQuantity });
+    } else {
+      transaction.delete(itemRef);
+    }
+  }).then(() => {
+    // Consume item transaction successful.
+  }).catch((error) => {
+    console.error("Consume item transaction failed: ", error);
+  });
 }
 
 function discardItem(id, quantity, items, table) {
   const today = DateTime.now();
+  const itemToDiscard = items[id];
+  const itemRef = db.collection('households').doc(currentUser.uid).collection(table).doc(id);
+  const statsRef = db.collection('statistics').doc(currentUser.uid);
 
-  if (items[id].expiring_date < today) {
-    localStorage.setItem("expired_discarded_items", localStorage.getItem("expired_discarded_items") + quantity);
-
-    if (items[id].opened) {
-      localStorage.setItem("expired_opened_items", localStorage.getItem("expired_opened_items") + quantity);
+  return db.runTransaction(async (transaction) => {
+    const itemDoc = await transaction.get(itemRef);
+    if (!itemDoc.exists) {
+      throw "Item to discard does not exist!";
     }
-  } else {
-    localStorage.setItem("consumed_items", localStorage.getItem("consumed_items") + quantity);
-  }
 
-  if (items[id].quantity > quantity) {
-    // let editedItem = { ...items[id] };
-    let editedItem = items[id];
-    editedItem.quantity -= quantity;
-    editData(editedItem, table);
-  } else {
-    deleteData(id, table);
-  }
+    const statsUpdate = {};
+    if (itemToDiscard.expiring_date < today) {
+      statsUpdate[`${table}_expired_discarded_items`] = firebase.firestore.FieldValue.increment(quantity);
+      if (itemToDiscard.opened) {
+        statsUpdate[`${table}_expired_opened_items`] = firebase.firestore.FieldValue.increment(quantity);
+      }
+    } else {
+      statsUpdate[`${table}_discarded_items`] = firebase.firestore.FieldValue.increment(quantity);
+    }
+
+    transaction.set(statsRef, statsUpdate, { merge: true });
+
+    if (itemDoc.data().quantity > quantity) {
+      const newQuantity = itemDoc.data().quantity - quantity;
+      transaction.update(itemRef, { quantity: newQuantity });
+    } else {
+      transaction.delete(itemRef);
+    }
+  }).then(() => {
+    // Discard item transaction successful.
+  }).catch((error) => {
+    console.error("Discard item transaction failed: ", error);
+  });
 }
 
 function addItemFromForm(e) {
@@ -346,7 +416,6 @@ document.getElementById('import-products-input').addEventListener('change', func
     clearDatabase(db)
     .then(() => importFromJson(db, result))
     .then(() => {
-      console.log('Successfully cleared database and imported data')
       displayData(foodsListElement, foodItems, sortedFoodItems, FOODS_TABLE);
       displayData(medicinesListElement, medicineItems, sortedMedicineItems, MEDICINES_TABLE);
     })
