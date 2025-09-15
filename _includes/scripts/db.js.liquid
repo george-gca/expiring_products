@@ -39,12 +39,18 @@ function setupRealtimeListener(listElement, sortedItems, table) {
     .onSnapshot(querySnapshot => {
       let currentItemsObject;
       // Clear and re-assign the global variable
-      if (table === 'foods') {
+      if (table === FOODS_TABLE) {
         foodItems = {};
         currentItemsObject = foodItems;
-      } else {
+      } else if (table === UTILITIES_TABLE) {
+        utilityItems = {};
+        currentItemsObject = utilityItems;
+      } else if (table === MEDICINES_TABLE) {
         medicineItems = {};
         currentItemsObject = medicineItems;
+      } else {
+        console.error("Unknown table: ", table);
+        return;
       }
 
       // Clear the list in the UI
@@ -65,9 +71,11 @@ function setupRealtimeListener(listElement, sortedItems, table) {
       sortItems(currentItemsObject, sortedItems);
 
       // Create or update the Fuse.js index for the correct tab
-      if (table === 'foods') {
+      if (table === FOODS_TABLE) {
         foodsFuse = new Fuse(sortedItems, fuseOptions);
-      } else {
+      } else if (table === UTILITIES_TABLE) {
+        utilitiesFuse = new Fuse(sortedItems, fuseOptions);
+      } else if (table === MEDICINES_TABLE) {
         medicinesFuse = new Fuse(sortedItems, fuseOptions);
       }
 

@@ -24,6 +24,9 @@
       <button class="nav-link active" id="foods-tab" data-bs-toggle="tab" data-bs-target="#foods-tab-pane" type="button" role="tab" aria-controls="foods-tab-pane" aria-selected="true">{{ page.foods }}</button>
     </li>
     <li class="nav-item" role="presentation">
+      <button class="nav-link" id="utilities-tab" data-bs-toggle="tab" data-bs-target="#utilities-tab-pane" type="button" role="tab" aria-controls="utilities-tab-pane" aria-selected="false">{{ page.utilities }}</button>
+    </li>
+    <li class="nav-item" role="presentation">
       <button class="nav-link" id="medicines-tab" data-bs-toggle="tab" data-bs-target="#medicines-tab-pane" type="button" role="tab" aria-controls="medicines-tab-pane" aria-selected="false">{{ page.medicines }}</button>
     </li>
     <li class="nav-item" role="presentation">
@@ -33,7 +36,8 @@
 
   <div class="tab-content" id="tabsContents">
     {% include items_tab.liquid collection="foods" tab_index=0 %}
-    {% include items_tab.liquid collection="medicines" tab_index=1 %}
+    {% include items_tab.liquid collection="utilities" tab_index=1 %}
+    {% include items_tab.liquid collection="medicines" tab_index=2 %}
     {% include settings_tab.liquid %}
   </div>
 

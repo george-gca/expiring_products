@@ -25,5 +25,6 @@ products_to_expire: Produtos a vencer
 quantity: Quantidade
 site_description: Um sistema simples de controle de produtos a vencer
 title: Produtos a vencer
+utilities: Utilitários
 view_on_github: Visualizar projeto no GitHub
 ---

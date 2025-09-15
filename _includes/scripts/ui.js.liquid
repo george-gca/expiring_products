@@ -27,9 +27,11 @@ document.getElementById('add-item-modal').addEventListener('shown.bs.modal', fun
   const tab = document.querySelector('.nav-link.active').id;
   let historyTable;
 
-  if (tab === "foods-tab") {
+  if (tab === `${FOODS_TABLE}-tab`) {
     historyTable = FOODS_HISTORY_TABLE;
-  } else if (tab === "medicines-tab") {
+  } else if (tab === `${UTILITIES_TABLE}-tab`) {
+    historyTable = UTILITIES_HISTORY_TABLE;
+  } else if (tab === `${MEDICINES_TABLE}-tab`) {
     historyTable = MEDICINES_HISTORY_TABLE;
   } else {
     return; // Exit if no valid tab is active
@@ -60,9 +62,11 @@ document.getElementById('edit-item-modal').addEventListener('show.bs.modal', fun
   const listElementId = button.parentElement.parentElement.id;
   let items;
 
-  if (listElementId === "foods-list") {
+  if (listElementId === `${FOODS_TABLE}-list`) {
     items = foodItems;
-  } else if (listElementId === "medicines-list") {
+  } else if (listElementId === `${UTILITIES_TABLE}-list`) {
+    items = utilityItems;
+  } else if (listElementId === `${MEDICINES_TABLE}-list`) {
     items = medicineItems;
   }
 
@@ -130,10 +134,13 @@ function editItem(e) {
   const id = e.target.getAttribute("data-item-id");
   let items, table;
 
-  if (listId === "foods-list") {
+  if (listId === `${FOODS_TABLE}-list`) {
     items = foodItems;
     table = FOODS_TABLE;
-  } else if (listId === "medicines-list") {
+  } else if (listId === `${UTILITIES_TABLE}-list`) {
+    items = utilityItems;
+    table = UTILITIES_TABLE;
+  } else if (listId === `${MEDICINES_TABLE}-list`) {
     items = medicineItems;
     table = MEDICINES_TABLE;
   }
@@ -333,13 +340,19 @@ function addItemFromForm(e) {
   // get current active tab
   const tab = document.querySelector('.nav-link.active').id;
 
-  if (tab === "foods-tab") {
+  if (tab === `${FOODS_TABLE}-tab`) {
     listElement = foodsListElement;
     items = foodItems;
     sortedItems = sortedFoodItems;
     table = FOODS_TABLE;
     history_table = FOODS_HISTORY_TABLE;
-  } else if (tab === "medicines-tab") {
+  } else if (tab === `${UTILITIES_TABLE}-tab`) {
+    listElement = utilitiesListElement;
+    items = utilityItems;
+    sortedItems = sortedUtilityItems;
+    table = UTILITIES_TABLE;
+    history_table = UTILITIES_HISTORY_TABLE;
+  } else if (tab === `${MEDICINES_TABLE}-tab`) {
     listElement = medicinesListElement;
     items = medicineItems;
     sortedItems = sortedMedicineItems;
