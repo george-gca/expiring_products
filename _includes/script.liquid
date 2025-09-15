@@ -102,22 +102,27 @@
 
   auth.onAuthStateChanged(user => {
     if (user) {
+      // User is signed in. Show the main content.
       currentUser = user;
       loginContainer.style.display = 'none';
       mainContent.style.display = 'flex';
       tabContents.style.display = 'block';
-      logoutBtn.style.display = 'block';
+      // logoutBtn.style.display = 'block';
 
       // Call the new real-time listeners instead of displayData
       setupRealtimeListener(foodsListElement, sortedFoodItems, 'foods');
       setupRealtimeListener(medicinesListElement, sortedMedicineItems, 'medicines');
     } else {
+      // User is signed out. Show the login form.
       currentUser = null;
       loginContainer.style.display = 'block';
       mainContent.style.display = 'none';
       tabContents.style.display = 'none';
-      logoutBtn.style.display = 'none';
+      // logoutBtn.style.display = 'none';
     }
+
+    // Reveal the content after the logic is complete
+    document.body.classList.remove('is-loading');
   });
 
   {% include scripts/ui.js.liquid %}

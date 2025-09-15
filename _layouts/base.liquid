@@ -5,7 +5,7 @@
 </head>
 
 <!-- https://fastbootstrap.com/docs/margin/-->
-<body class="m-4">
+<body class="m-4 is-loading">
   {% include github_corner.liquid %}
 
   <h1>{{ page.products_to_expire }}</h1>
@@ -19,7 +19,7 @@
     {% comment %} <button id="logout-btn" style="display:none;">Logout</button> {% endcomment %}
   </div>
 
-  <ul class="nav nav-tabs" id="tabs" role="tablist" style="display:none;">
+  <ul class="nav nav-tabs" id="tabs" role="tablist">
     <li class="nav-item" role="presentation">
       <button class="nav-link active" id="foods-tab" data-bs-toggle="tab" data-bs-target="#foods-tab-pane" type="button" role="tab" aria-controls="foods-tab-pane" aria-selected="true">{{ page.foods }}</button>
     </li>
@@ -31,7 +31,7 @@
     </li>
   </ul>
 
-  <div class="tab-content" id="tabsContents" style="display:none;">
+  <div class="tab-content" id="tabsContents">
     {% include foods_tab.liquid %}
     {% include medicines_tab.liquid %}
     {% include settings_tab.liquid %}
