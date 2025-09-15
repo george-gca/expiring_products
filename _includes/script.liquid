@@ -8,11 +8,13 @@
   const foodsListElement = document.getElementById('foods-list');
   let foodItems = {};
   let sortedFoodItems = [];
+  let foodsFuse;
 
   const MEDICINES_TABLE = "medicines";
   const medicinesListElement = document.getElementById('medicines-list');
   let medicineItems = {};
   let sortedMedicineItems = [];
+  let medicinesFuse;
 
   const FOODS_HISTORY_TABLE = "foods_history";
   const MEDICINES_HISTORY_TABLE = "medicines_history";
@@ -110,8 +112,36 @@
       // logoutBtn.style.display = 'block';
 
       // Call the new real-time listeners instead of displayData
-      setupRealtimeListener(foodsListElement, sortedFoodItems, 'foods');
-      setupRealtimeListener(medicinesListElement, sortedMedicineItems, 'medicines');
+      setupRealtimeListener(foodsListElement, sortedFoodItems, FOODS_TABLE);
+      setupRealtimeListener(medicinesListElement, sortedMedicineItems, MEDICINES_TABLE);
+
+      const foodsSearchInput = document.getElementById('foods-search-input');
+      const medicinesSearchInput = document.getElementById('medicines-search-input');
+
+      const handleSearch = (searchTerm, fuseInstance, listElement) => {
+        const allItems = listElement.querySelectorAll('li[data-item-id]');
+
+        if (!searchTerm) {
+          allItems.forEach(li => li.style.display = ''); // Show all
+          return;
+        }
+
+        const results = fuseInstance.search(searchTerm);
+        const matchingIds = new Set(results.map(result => result.item.id));
+
+        allItems.forEach(li => {
+          const itemId = li.getAttribute('data-item-id');
+          if (matchingIds.has(itemId)) {
+            li.style.display = ''; // Show match
+          } else {
+            li.style.display = 'none'; // Hide non-match
+          }
+        });
+      };
+
+      foodsSearchInput.addEventListener('input', (e) => handleSearch(e.target.value, foodsFuse, foodsListElement));
+      medicinesSearchInput.addEventListener('input', (e) => handleSearch(e.target.value, medicinesFuse, medicinesListElement));
+
     } else {
       // User is signed out. Show the login form.
       currentUser = null;
