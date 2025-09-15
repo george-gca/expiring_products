@@ -33,6 +33,7 @@ exclude:
 include: ["_pages"]
 
 plugins:
+  - jekyll-3rd-party-libraries
   - jekyll-minifier
   - jekyll-polyglot
 
