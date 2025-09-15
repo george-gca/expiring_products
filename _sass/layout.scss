@@ -3,3 +3,10 @@ body.is-loading #tabs,
 body.is-loading #tabsContents {
   display: none;
 }
+
+/* Add this media query */
+@media all and (display-mode: standalone) {
+  .github-corner {
+    display: none;
+  }
+}
