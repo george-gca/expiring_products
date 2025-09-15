@@ -66,14 +66,21 @@ function checkExpiryDates() {
     // 1st Argument to forEach: callback
     checkExpiryDateInList,
     // 2nd Argument to forEach: thisArg
-    { listId: 'foods-list' }
+    { listId: `${FOODS_TABLE}-list` }
+  );
+
+  sortedUtilityItems.some(
+    // 1st Argument to forEach: callback
+    checkExpiryDateInList,
+    // 2nd Argument to forEach: thisArg
+    { listId: `${UTILITIES_TABLE}-list` }
   );
 
   sortedMedicineItems.some(
     // 1st Argument to forEach: callback
     checkExpiryDateInList,
     // 2nd Argument to forEach: thisArg
-    { listId: 'medicines-list' }
+    { listId: `${MEDICINES_TABLE}-list` }
   );
 }
 

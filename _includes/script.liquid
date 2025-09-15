@@ -5,19 +5,26 @@
   var Interval = luxon.Interval;
 
   const FOODS_TABLE = "foods";
-  const foodsListElement = document.getElementById('foods-list');
+  const foodsListElement = document.getElementById(`${FOODS_TABLE}-list`);
+  const FOODS_HISTORY_TABLE = `${FOODS_TABLE}_history`;
   let foodItems = {};
   let sortedFoodItems = [];
   let foodsFuse;
 
+  const UTILITIES_TABLE = "utilities";
+  const utilitiesListElement = document.getElementById(`${UTILITIES_TABLE}-list`);
+  const UTILITIES_HISTORY_TABLE = `${UTILITIES_TABLE}_history`;
+  let utilityItems = {};
+  let sortedUtilityItems = [];
+  let utilitiesFuse;
+
   const MEDICINES_TABLE = "medicines";
-  const medicinesListElement = document.getElementById('medicines-list');
+  const medicinesListElement = document.getElementById(`${MEDICINES_TABLE}-list`);
+  const MEDICINES_HISTORY_TABLE = `${MEDICINES_TABLE}_history`;
   let medicineItems = {};
   let sortedMedicineItems = [];
   let medicinesFuse;
 
-  const FOODS_HISTORY_TABLE = "foods_history";
-  const MEDICINES_HISTORY_TABLE = "medicines_history";
 
   const firebaseConfig = {
     apiKey: "{{ site.env.FIREBASE_API_KEY }}",
@@ -113,10 +120,12 @@
 
       // Call the new real-time listeners instead of displayData
       setupRealtimeListener(foodsListElement, sortedFoodItems, FOODS_TABLE);
+      setupRealtimeListener(utilitiesListElement, sortedUtilityItems, UTILITIES_TABLE);
       setupRealtimeListener(medicinesListElement, sortedMedicineItems, MEDICINES_TABLE);
 
-      const foodsSearchInput = document.getElementById('foods-search-input');
-      const medicinesSearchInput = document.getElementById('medicines-search-input');
+      const foodsSearchInput = document.getElementById(`${FOODS_TABLE}-search-input`);
+      const utilitiesSearchInput = document.getElementById(`${UTILITIES_TABLE}-search-input`);
+      const medicinesSearchInput = document.getElementById(`${MEDICINES_TABLE}-search-input`);
 
       const handleSearch = (searchTerm, fuseInstance, listElement) => {
         const allItems = listElement.querySelectorAll('li[data-item-id]');
@@ -140,6 +149,7 @@
       };
 
       foodsSearchInput.addEventListener('input', (e) => handleSearch(e.target.value, foodsFuse, foodsListElement));
+      utilitiesSearchInput.addEventListener('input', (e) => handleSearch(e.target.value, utilitiesFuse, utilitiesListElement));
       medicinesSearchInput.addEventListener('input', (e) => handleSearch(e.target.value, medicinesFuse, medicinesListElement));
 
     } else {

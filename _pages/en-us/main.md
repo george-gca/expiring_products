@@ -25,5 +25,6 @@ products_to_expire: Products to expire
 quantity: Quantity
 site_description: A simple system to control products to expire
 title: Products to expire
+utilities: Utilities
 view_on_github: View project on GitHub
 ---
