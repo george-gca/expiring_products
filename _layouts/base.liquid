@@ -32,8 +32,8 @@
   </ul>
 
   <div class="tab-content" id="tabsContents">
-    {% include foods_tab.liquid %}
-    {% include medicines_tab.liquid %}
+    {% include items_tab.liquid collection="foods" tab_index=0 %}
+    {% include items_tab.liquid collection="medicines" tab_index=1 %}
     {% include settings_tab.liquid %}
   </div>
 
