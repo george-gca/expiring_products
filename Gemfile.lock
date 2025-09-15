@@ -82,6 +82,8 @@ GEM
       safe_yaml (~> 1.0)
       terminal-table (>= 1.8, < 4.0)
       webrick (~> 1.7)
+    jekyll-animate-elements (0.0.4)
+      jekyll (>= 3.6, < 5.0)
     jekyll-minifier (0.2.2)
       cssminify2 (~> 2.1.0)
       htmlcompressor (~> 0.4)
@@ -209,6 +211,7 @@ DEPENDENCIES
   css_parser
   jekyll
   jekyll-3rd-party-libraries
+  jekyll-animate-elements
   jekyll-minifier
   jekyll-polyglot
   nokogiri
