@@ -1,11 +1,12 @@
-function addHistoryData(name, duration, table) {
+function addHistoryData(name, duration, recurring, table) {
   if (!currentUser || !name) return; // Do not save if not logged in or name is empty
 
   // Use the item name as the document ID to prevent duplicate history entries.
   // .set() with { merge: true } will create the document or update it if it already exists.
   db.collection('households').doc(currentUser.uid).collection(table).doc(name).set({
       name: name,
-      duration: duration || "" // Save duration, or an empty string if not provided
+      duration: duration || "", // Save duration, or an empty string if not provided
+      recurring: recurring || false // Save recurring, or false if not provided
     }, { merge: true })
     .then(() => {
       // History item saved
@@ -31,8 +32,8 @@ function setupRealtimeListener(listElement, sortedItems, table) {
     isCaseSensitive: false,
   };
 
-  // Get a reference to the search container for this tab
-  const searchContainer = document.getElementById(`${table}-search-container`);
+  // // Get a reference to the search container for this tab
+  // const searchContainer = document.getElementById(`${table}-search-container`);
 
   db.collection('households').doc(currentUser.uid).collection(table)
     .orderBy("expiring_date", "asc")
@@ -79,42 +80,44 @@ function setupRealtimeListener(listElement, sortedItems, table) {
         medicinesFuse = new Fuse(sortedItems, fuseOptions);
       }
 
-      // Render the full list initially
-      if (sortedItems.length === 0) {
-        // Hide search bar if list is empty
-        if (searchContainer) searchContainer.style.display = 'none';
+      // // Render the full list initially
+      // if (sortedItems.length === 0) {
+      //   // Hide search bar if list is empty
+      //   if (searchContainer) searchContainer.style.display = 'none';
 
-        const li = document.createElement("li");
-        li.classList.add("list-group-item");
-        li.textContent = "{{ page.no_items }}";
-        listElement.appendChild(li);
-      } else {
-        // Show search bar if list has items
-        if (searchContainer) searchContainer.style.display = '';
+      //   const li = document.createElement("li");
+      //   li.classList.add("list-group-item");
+      //   li.textContent = "{{ page.no_items }}";
+      //   listElement.appendChild(li);
+      // } else {
+      //   // Show search bar if list has items
+      //   if (searchContainer) searchContainer.style.display = '';
 
-        for (const item of sortedItems) {
-          const li = document.createElement("li");
-          // Add a unique ID to each list item
-          li.id = `item-${item.id}`;
-          li.setAttribute("data-item-id", item.id);
-          li.innerHTML = `
-            <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-bs-toggle="modal" data-bs-target="#edit-item-modal" data-bs-id="${item.id}">
-              <div class="d-flex align-items-center">
-                <div class="ms-2 me-auto">
-                  <div class="fw-bold">${item.name}</div>
-                  ${DateTime.fromISO(item.expiring_date).setLocale('{{ site.active_lang }}').toRelative()}
-                </div>
-              </div>
-              <div class="d-flex align-items-center">
-                <span class="badge text-bg-primary rounded-pill">${item.quantity}</span>
-                <span class="ms-2"><i class="fa-solid fa-chevron-right"></i></span>
-              </div>
-            </button>
-          `;
-          listElement.appendChild(li);
-        }
-      }
-      checkExpiryDates();
+      //   for (const item of sortedItems) {
+      //     const li = document.createElement("li");
+      //     // Add a unique ID to each list item
+      //     li.id = `item-${item.id}`;
+      //     li.setAttribute("data-item-id", item.id);
+      //     li.innerHTML = `
+      //       <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-bs-toggle="modal" data-bs-target="#edit-item-modal" data-bs-id="${item.id}">
+      //         <div class="d-flex align-items-center">
+      //           <div class="ms-2 me-auto">
+      //             <div class="fw-bold">${item.name}</div>
+      //             ${DateTime.fromISO(item.expiring_date).setLocale('{{ site.active_lang }}').toRelative()}
+      //           </div>
+      //         </div>
+      //         <div class="d-flex align-items-center">
+      //           <span class="badge text-bg-primary rounded-pill">${item.quantity}</span>
+      //           <span class="ms-2"><i class="fa-solid fa-chevron-right"></i></span>
+      //         </div>
+      //       </button>
+      //     `;
+      //     listElement.appendChild(li);
+      //   }
+      // }
+      // checkExpiryDates();
+
+      updateDisplay();
     }, error => {
       console.error("Firestore listener error: ", error);
     }
