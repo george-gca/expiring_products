@@ -235,7 +235,7 @@
           li.querySelector('.btn-success').addEventListener('click', () => {
             // Open "Add Item" modal and pre-fill the name
             document.getElementById('add-item-modal-title').textContent = '{{ page.add_item }}';
-            const nameInput = document.getElementById('name-input');
+            const nameInput = document.getElementById('new-item-name');
             nameInput.value = item.name;
             nameInput.dispatchEvent(new Event('change')); // Trigger history lookup
             new bootstrap.Modal(document.getElementById('add-item-modal')).show();

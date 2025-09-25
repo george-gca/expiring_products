@@ -1,15 +1,26 @@
 // finds when the add item modal is shown and clear the form
 // also update needed information
-document.getElementById('add-item-modal').addEventListener('shown.bs.modal', function () {
-  // clear the form
-  const nameElement = document.getElementById('new-item-name');
-  nameElement.value = "";
+document.getElementById('add-item-modal').addEventListener('show.bs.modal', function (event) {
+  // Get the element that triggered the modal, e.g., the floating action button.
+  const button = event.relatedTarget;
 
-  const quantityElement = document.getElementById('new-item-quantity');
-  quantityElement.value = "";
+  // ONLY reset the form if the modal was opened by a data-bs-toggle button.
+  // This prevents it from resetting when opened programmatically from the shopping list.
+  if (button) {
+    document.getElementById('new-item-name').value = "";
+    document.getElementById('new-item-quantity').value = "";
+    document.getElementById('new-item-duration').value = "";
+    document.getElementById('add-item-modal-title').textContent = '{{ page.add_item }}';
+  }
+  // // clear the form
+  // const nameElement = document.getElementById('new-item-name');
+  // nameElement.value = "";
 
-  const durationElement = document.getElementById('new-item-duration');
-  durationElement.value = "";
+  // const quantityElement = document.getElementById('new-item-quantity');
+  // quantityElement.value = "";
+
+  // const durationElement = document.getElementById('new-item-duration');
+  // durationElement.value = "";
 
   // update the date input and its min value to the current date
   const expiringDateElement = document.getElementById('new-item-expiring-date');
