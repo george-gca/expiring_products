@@ -36,6 +36,7 @@ document.getElementById('add-item-modal').addEventListener('shown.bs.modal', fun
   } else {
     return; // Exit if no valid tab is active
   }
+document.getElementById('add-item-modal').querySelector('form').addEventListener("submit", addItemFromForm);
 
   if (!currentUser) return; // Exit if user is not logged in
 
@@ -47,7 +48,9 @@ document.getElementById('add-item-modal').addEventListener('shown.bs.modal', fun
         const option = document.createElement("option");
         datalistOptions.appendChild(option);
         option.value = item.name;
-        option.setAttribute("data-value", item.duration);
+        option.setAttribute("data-duration", item.duration);
+        // Set the recurring attribute, defaulting to false if not present
+        option.setAttribute("data-recurring", item.recurring || false);
       });
     })
     .catch(error => {
@@ -119,8 +122,8 @@ document.getElementById('new-item-name').addEventListener('change', function (ev
 
   options.forEach((option) => {
     if (option.value === datalist.value) {
-      const duration = option.getAttribute("data-value");
-      document.getElementById('new-item-duration').value = duration;
+      document.getElementById('new-item-duration').value = option.getAttribute("data-duration");
+      document.getElementById('recurring-purchase-checkbox').checked = option.getAttribute("data-recurring") === "true";
       return;
     }
   });
@@ -369,6 +372,7 @@ function addItemFromForm(e) {
   const quantityInput = document.getElementById("new-item-quantity");
   const expiringDateInput = document.getElementById("new-item-expiring-date");
   const durationInput = document.getElementById("new-item-duration");
+  const recurring = document.getElementById('recurring-purchase-checkbox').checked;
   let expiringDate = DateTime.fromISO(expiringDateInput.value).endOf('day');
 
   let duration;
@@ -383,17 +387,19 @@ function addItemFromForm(e) {
     name: nameInput.value,
     quantity: quantityInput.value,
     expiring_date: expiringDate.toISO(),
+    recurring: recurring,
     duration: duration,
     date_opened: null,
     opened: false
   }, table);
 
-  addHistoryData(nameInput.value, durationInput.value, history_table);
+  addHistoryData(nameInput.value, durationInput.value, recurring, history_table);
 
   nameInput.value = "";
   quantityInput.value = "";
   expiringDateInput.value = "";
   durationInput.value = "";
+  recurring.checked = true;
 }
 
 // detect when export-products-input is clicked and export the products table

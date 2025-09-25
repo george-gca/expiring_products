@@ -19,20 +19,27 @@
     {% comment %} <button id="logout-btn" style="display:none;">Logout</button> {% endcomment %}
   </div>
 
-  <ul class="nav nav-tabs" id="tabs" role="tablist">
-    <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="foods-tab" data-bs-toggle="tab" data-bs-target="#foods-tab-pane" type="button" role="tab" aria-controls="foods-tab-pane" aria-selected="true">{{ page.foods }}</button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="utilities-tab" data-bs-toggle="tab" data-bs-target="#utilities-tab-pane" type="button" role="tab" aria-controls="utilities-tab-pane" aria-selected="false">{{ page.utilities }}</button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="medicines-tab" data-bs-toggle="tab" data-bs-target="#medicines-tab-pane" type="button" role="tab" aria-controls="medicines-tab-pane" aria-selected="false">{{ page.medicines }}</button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="options-tab" data-bs-toggle="tab" data-bs-target="#options-tab-pane" type="button" role="tab" aria-controls="options-tab-pane" aria-selected="false">{{ page.options }}</button>
-    </li>
-  </ul>
+  <div class="d-flex justify-content-between align-items-center border-bottom" id="tabs" >
+    <ul class="nav nav-tabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="foods-tab" data-bs-toggle="tab" data-bs-target="#foods-tab-pane" type="button" role="tab" aria-controls="foods-tab-pane" aria-selected="true">{{ page.foods }}</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="utilities-tab" data-bs-toggle="tab" data-bs-target="#utilities-tab-pane" type="button" role="tab" aria-controls="utilities-tab-pane" aria-selected="false">{{ page.utilities }}</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="medicines-tab" data-bs-toggle="tab" data-bs-target="#medicines-tab-pane" type="button" role="tab" aria-controls="medicines-tab-pane" aria-selected="false">{{ page.medicines }}</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="options-tab" data-bs-toggle="tab" data-bs-target="#options-tab-pane" type="button" role="tab" aria-controls="options-tab-pane" aria-selected="false">{{ page.options }}</button>
+      </li>
+    </ul>
+
+    <div class="form-check form-switch">
+      <input class="form-check-input" type="checkbox" role="switch" id="shopping-mode-switch">
+      <label class="form-check-label" for="shopping-mode-switch">Shopping Mode</label>
+    </div>
+  </div>
 
   <div class="tab-content" id="tabsContents">
     {% include items_tab.liquid collection="foods" tab_index=0 %}

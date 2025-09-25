@@ -110,13 +110,24 @@
   });
 
   auth.onAuthStateChanged(user => {
+    const shoppingModeSwitch = document.getElementById('shopping-mode-switch');
+
     if (user) {
       // User is signed in. Show the main content.
       currentUser = user;
       loginContainer.style.display = 'none';
       mainContent.style.display = 'flex';
       tabContents.style.display = 'block';
-      // logoutBtn.style.display = 'block';
+
+      // Restore shopping mode state from localStorage
+      const savedMode = localStorage.getItem('shoppingMode') === 'true';
+      shoppingModeSwitch.checked = savedMode;
+
+      // Listen for changes on the switch
+      shoppingModeSwitch.addEventListener('change', (e) => {
+        localStorage.setItem('shoppingMode', e.target.checked);
+        updateDisplay(); // Re-render everything when mode changes
+      });
 
       // Call the new real-time listeners instead of displayData
       setupRealtimeListener(foodsListElement, sortedFoodItems, FOODS_TABLE);
@@ -164,6 +175,94 @@
     // Reveal the content after the logic is complete
     document.body.classList.remove('is-loading');
   });
+
+  function updateDisplay() {
+    const isShoppingMode = document.getElementById('shopping-mode-switch').checked;
+
+    // Function to render a single list (foods or medicines)
+    const renderList = (fullList, listElement) => {
+      while (listElement.firstChild) {
+        listElement.removeChild(listElement.firstChild);
+      }
+
+      let itemsToRender;
+
+      if (isShoppingMode) {
+        // Filter for recurring items and sort by quantity
+        itemsToRender = fullList
+          .filter(item => item.recurring)
+          .sort((a, b) => a.quantity - b.quantity);
+      } else {
+        // Normal mode: show all items sorted by date
+        itemsToRender = fullList; // Already sorted by date from the listener
+      }
+
+      if (itemsToRender.length === 0) {
+        const li = document.createElement("li");
+        li.classList.add("list-group-item");
+        li.textContent = isShoppingMode ? "Shopping list is empty." : "{{ page.no_items }}";
+        listElement.appendChild(li);
+        return;
+      }
+
+      for (const item of itemsToRender) {
+        const li = document.createElement("li");
+        li.id = `item-${item.id}`;
+        li.setAttribute("data-item-id", item.id);
+
+        if (isShoppingMode) {
+          // --- SHOPPING MODE ITEM TEMPLATE ---
+          li.innerHTML = `
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <div class="fw-bold">${item.name}</div>
+                <small>Quantity: ${item.quantity}</small>
+              </div>
+              <div>
+                <button class="btn btn-sm btn-outline-secondary me-2" title="Skip for now">
+                  <i class="fa-solid fa-eye-slash"></i>
+                </button>
+                <button class="btn btn-sm btn-success" title="Add to pantry">
+                  <i class="fa-solid fa-cart-plus"></i>
+                </button>
+              </div>
+            </div>
+          `;
+          // Add event listeners for shopping buttons
+          li.querySelector('.btn-outline-secondary').addEventListener('click', () => {
+            li.style.display = 'none'; // Hide when skipping
+          });
+          li.querySelector('.btn-success').addEventListener('click', () => {
+            // Open "Add Item" modal and pre-fill the name
+            document.getElementById('add-item-modal-title').textContent = '{{ page.add_item }}';
+            const nameInput = document.getElementById('name-input');
+            nameInput.value = item.name;
+            nameInput.dispatchEvent(new Event('change')); // Trigger history lookup
+            new bootstrap.Modal(document.getElementById('add-item-modal')).show();
+          });
+        } else {
+          // --- NORMAL MODE ITEM TEMPLATE ---
+          li.innerHTML = `
+            <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-bs-toggle="modal" data-bs-target="#edit-item-modal" data-bs-id="${item.id}">
+              <div class="d-flex align-items-center">
+                <div class="ms-2 me-auto"><div class="fw-bold">${item.name}</div>${DateTime.fromISO(item.expiring_date).setLocale('{{ site.active_lang }}').toRelative()}</div>
+              </div>
+              <div class="d-flex align-items-center"><span class="badge text-bg-primary rounded-pill">${item.quantity}</span><span class="ms-2"><i class="fa-solid fa-chevron-right"></i></span></div>
+            </button>
+          `;
+        }
+        listElement.appendChild(li);
+      }
+      if (!isShoppingMode) {
+        checkExpiryDates();
+      }
+    };
+
+    // Render both lists
+    renderList(sortedFoodItems, foodsListElement);
+    renderList(sortedUtilityItems, utilitiesListElement);
+    renderList(sortedMedicineItems, medicinesListElement);
+  }
 
   {% include scripts/ui.js.liquid %}
   {% include scripts/utils.js.liquid %}
