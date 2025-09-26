@@ -68,20 +68,14 @@ third_party_libraries:
       js: "https://cdn.jsdelivr.net/npm/bootstrap@{{version}}/dist/js/bootstrap.bundle.min.js"
     version: "5.3.3"
   firebase-app:
-    integrity:
-      js: "sha384-..."
     url:
       js: "https://www.gstatic.com/firebasejs/{{version}}/firebase-app-compat.js"
     version: "9.6.7"
   firebase-auth:
-    integrity:
-      js: "sha384-..."
     url:
       js: "https://www.gstatic.com/firebasejs/{{version}}/firebase-auth-compat.js"
     version: "9.6.7"
   firebase-firestore:
-    integrity:
-      js: "sha384-..."
     url:
       js: "https://www.gstatic.com/firebasejs/{{version}}/firebase-firestore-compat.js"
     version: "9.6.7"
