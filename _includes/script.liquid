@@ -179,6 +179,11 @@
   function updateDisplay() {
     const isShoppingMode = document.getElementById('shopping-mode-switch').checked;
 
+    // Clear hidden shopping items when switching to normal mode
+    if (!isShoppingMode) {
+      localStorage.removeItem('hiddenShoppingItems');
+    }
+
     // Function to render a single list (foods or medicines)
     const renderList = (fullList, listElement) => {
       while (listElement.firstChild) {
@@ -188,9 +193,10 @@
       let itemsToRender;
 
       if (isShoppingMode) {
-        // Filter for recurring items and sort by quantity
+        // Filter for recurring items, exclude temporarily hidden ones, and sort by quantity
+        const hiddenItems = JSON.parse(localStorage.getItem('hiddenShoppingItems') || '[]');
         itemsToRender = fullList
-          .filter(item => item.recurring)
+          .filter(item => item.recurring && !hiddenItems.includes(item.name))
           .sort((a, b) => a.quantity - b.quantity);
       } else {
         // Normal mode: show all items sorted by date
@@ -233,6 +239,9 @@
             li.style.display = 'none'; // Hide when skipping
           });
           li.querySelector('.btn-success').addEventListener('click', () => {
+            // Store reference to this shopping list item for later hiding
+            window.currentShoppingItem = { element: li, name: item.name };
+
             // Open "Add Item" modal and pre-fill the name
             document.getElementById('add-item-modal-title').textContent = '{{ page.add_item }}';
             const nameInput = document.getElementById('new-item-name');
