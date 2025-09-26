@@ -5,7 +5,39 @@
       <div class="mb-3">
         <div class="input-group">
           <input type="text" class="form-control" id="new-category-name" placeholder="{{ page.category_name }}">
-          <input type="text" class="form-control" id="new-category-emoji" placeholder="🛒" maxlength="2" style="max-width: 70px;" title="{{ page.category_emoji }}">
+          <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="emoji-picker-btn" data-bs-toggle="dropdown" aria-expanded="false" style="min-width: 80px;">
+              <span id="selected-emoji">🛒</span>
+            </button>
+            <div class="dropdown-menu emoji-picker" aria-labelledby="emoji-picker-btn">
+              <div class="emoji-grid">
+                <button type="button" class="emoji-option" data-emoji="🛒">🛒</button>
+                <button type="button" class="emoji-option" data-emoji="🍎">🍎</button>
+                <button type="button" class="emoji-option" data-emoji="🥖">🥖</button>
+                <button type="button" class="emoji-option" data-emoji="🥛">🥛</button>
+                <button type="button" class="emoji-option" data-emoji="🧽">🧽</button>
+                <button type="button" class="emoji-option" data-emoji="🧴">🧴</button>
+                <button type="button" class="emoji-option" data-emoji="💊">💊</button>
+                <button type="button" class="emoji-option" data-emoji="🧼">🧼</button>
+                <button type="button" class="emoji-option" data-emoji="🧻">🧻</button>
+                <button type="button" class="emoji-option" data-emoji="🪥">🪥</button>
+                <button type="button" class="emoji-option" data-emoji="🪒">🪒</button>
+                <button type="button" class="emoji-option" data-emoji="�">💄</button>
+                <button type="button" class="emoji-option" data-emoji="🧴">🧴</button>
+                <button type="button" class="emoji-option" data-emoji="🧽">🧽</button>
+                <button type="button" class="emoji-option" data-emoji="🧹">🧹</button>
+                <button type="button" class="emoji-option" data-emoji="🪣">🪣</button>
+                <button type="button" class="emoji-option" data-emoji="🔋">🔋</button>
+                <button type="button" class="emoji-option" data-emoji="💡">💡</button>
+                <button type="button" class="emoji-option" data-emoji="🕯️">🕯️</button>
+                <button type="button" class="emoji-option" data-emoji="📦">📦</button>
+                <button type="button" class="emoji-option" data-emoji="🏠">🏠</button>
+                <button type="button" class="emoji-option" data-emoji="🧊">🧊</button>
+                <button type="button" class="emoji-option" data-emoji="❄️">❄️</button>
+                <button type="button" class="emoji-option" data-emoji="🌡️">🌡️</button>
+              </div>
+            </div>
+          </div>
           <button class="btn btn-outline-primary" type="button" id="add-category-btn">
             <i class="fa-solid fa-plus"></i> <span class="btn-text">{{ page.add_category }}</span>
           </button>
