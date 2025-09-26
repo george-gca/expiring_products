@@ -274,8 +274,16 @@
             </div>
           `;
           // Add event listeners for shopping buttons
-          li.querySelector('.btn-outline-secondary').addEventListener('click', () => {
-            li.style.display = 'none'; // Hide when skipping
+          li.querySelector('.btn-outline-secondary').addEventListener('click', async () => {
+            // Add item to hidden list in localStorage
+            const hiddenItems = JSON.parse(localStorage.getItem('hiddenShoppingItems') || '[]');
+            if (!hiddenItems.includes(item.name)) {
+              hiddenItems.push(item.name);
+              localStorage.setItem('hiddenShoppingItems', JSON.stringify(hiddenItems));
+            }
+
+            // Refresh the display to properly update the list and show empty message if needed
+            await updateDisplay();
           });
           li.querySelector('.btn-success').addEventListener('click', () => {
             // Store reference to this shopping list item for later hiding
