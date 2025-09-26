@@ -37,14 +37,14 @@
 
     <div class="form-check form-switch">
       <input class="form-check-input" type="checkbox" role="switch" id="shopping-mode-switch">
-      <label class="form-check-label" for="shopping-mode-switch">Shopping Mode</label>
+      <label class="form-check-label" for="shopping-mode-switch">{{ page.shopping_mode }}</label>
     </div>
   </div>
 
   <div class="tab-content" id="tabsContents">
-    {% include items_tab.liquid collection="foods" tab_index=0 %}
-    {% include items_tab.liquid collection="utilities" tab_index=1 %}
-    {% include items_tab.liquid collection="medicines" tab_index=2 %}
+    {% include items_tab.liquid collection="foods" localized_collection=page.foods tab_index=0 %}
+    {% include items_tab.liquid collection="utilities" localized_collection=page.utilities tab_index=1 %}
+    {% include items_tab.liquid collection="medicines" localized_collection=page.medicines tab_index=2 %}
     {% include settings_tab.liquid %}
   </div>
 

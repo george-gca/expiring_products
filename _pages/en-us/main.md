@@ -23,6 +23,9 @@ opened_items: Opened items
 options: Options
 products_to_expire: Products to expire
 quantity: Quantity
+recurring_purchase: Recurring purchase
+search: Search
+shopping_mode: Shopping mode
 site_description: A simple system to control products to expire
 title: Products to expire
 utilities: Utilities

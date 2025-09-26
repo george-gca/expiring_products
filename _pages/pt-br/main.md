@@ -23,6 +23,9 @@ opened_items: Itens abertos
 options: Opções
 products_to_expire: Produtos a vencer
 quantity: Quantidade
+recurring_purchase: Compra recorrente
+search: Buscar
+shopping_mode: Modo de compras
 site_description: Um sistema simples de controle de produtos a vencer
 title: Produtos a vencer
 utilities: Utilitários
