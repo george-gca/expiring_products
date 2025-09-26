@@ -5,8 +5,9 @@
       <div class="mb-3">
         <div class="input-group">
           <input type="text" class="form-control" id="new-category-name" placeholder="{{ page.category_name }}">
+          <input type="text" class="form-control" id="new-category-emoji" placeholder="🛒" maxlength="2" style="max-width: 70px;" title="{{ page.category_emoji }}">
           <button class="btn btn-outline-primary" type="button" id="add-category-btn">
-            <i class="fa-solid fa-plus"></i> {{ page.add_category }}
+            <i class="fa-solid fa-plus"></i> <span class="btn-text">{{ page.add_category }}</span>
           </button>
         </div>
       </div>
@@ -17,12 +18,26 @@
 
       <hr>
 
-      <input type="button" id="export-products-input" class="d-none"/>
-      <label for="export-products-input" class="btn">{{ page.export_data }}</label>
-      <input type="file" id="import-products-input" accept=".json" class="d-none"/>
-      <label for="import-products-input" class="btn">{{ page.import_data }}</label>
-      <button id="logout-btn" class="btn btn-danger">{{ page.logout }}</button>
-      {% include language_toggle.liquid %}
+      <div class="settings-actions">
+        <div class="d-flex gap-2 flex-wrap">
+          <input type="button" id="export-products-input" class="d-none"/>
+          <label for="export-products-input" class="btn btn-outline-secondary flex-fill">
+            <i class="fa-solid fa-download"></i> {{ page.export_data }}
+          </label>
+          <input type="file" id="import-products-input" accept=".json" class="d-none"/>
+          <label for="import-products-input" class="btn btn-outline-secondary flex-fill">
+            <i class="fa-solid fa-upload"></i> {{ page.import_data }}
+          </label>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <button id="logout-btn" class="btn btn-danger flex-fill">
+            <i class="fa-solid fa-sign-out-alt"></i> {{ page.logout }}
+          </button>
+          <div class="flex-fill">
+            {% include language_toggle.liquid %}
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

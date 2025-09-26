@@ -7,6 +7,7 @@ add_category: Add Category
 add_item: Add item
 category: Category
 category_name: Category name
+category_emoji: Emoji
 change_theme: Change theme
 close: Close
 consumed_items: Consumed items

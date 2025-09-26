@@ -360,7 +360,19 @@
       button.setAttribute('role', 'tab');
       button.setAttribute('aria-controls', `${category.key}-tab-pane`);
       button.setAttribute('aria-selected', isActive ? 'true' : 'false');
-      button.textContent = category.name;
+
+      // Create emoji and name elements for better mobile display
+      const emoji = category.emoji || '📦';
+      const emojiSpan = document.createElement('span');
+      emojiSpan.className = 'category-emoji';
+      emojiSpan.textContent = emoji;
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'category-name';
+      nameSpan.textContent = category.name;
+
+      button.appendChild(emojiSpan);
+      button.appendChild(nameSpan);
 
       li.appendChild(button);
       tabsContainer.appendChild(li);

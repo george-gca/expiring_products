@@ -6,14 +6,14 @@
     {% else %}
       {% assign other_language = site.languages.first %}
     {% endif %}
-    <button class="btn">
+    <button class="btn btn-outline-info w-100">
       {% if site.active_lang == site.default_lang %}
-        <a class="nav-link" {% static_href -%} href="{{ site.baseurl }}/{{ other_language }}{{ page.url }}" {%- endstatic_href %}>
-          {{ other_language | upcase }}
+        <a class="nav-link text-decoration-none" {% static_href -%} href="{{ site.baseurl }}/{{ other_language }}{{ page.url }}" {%- endstatic_href %}>
+          <i class="fa-solid fa-language"></i> {{ other_language | upcase }}
         </a>
       {% else %}
-        <a class="nav-link" {% static_href -%} href="{{ site.baseurl }}{{ page.url }}" {%- endstatic_href %}>
-          {{ site.default_lang | upcase }}
+        <a class="nav-link text-decoration-none" {% static_href -%} href="{{ site.baseurl }}{{ page.url }}" {%- endstatic_href %}>
+          <i class="fa-solid fa-language"></i> {{ site.default_lang | upcase }}
         </a>
       {% endif %}
     </button>
