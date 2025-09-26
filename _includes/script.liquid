@@ -193,11 +193,28 @@
       let itemsToRender;
 
       if (isShoppingMode) {
-        // Filter for recurring items, exclude temporarily hidden ones, and sort by quantity
+        // Filter for recurring items, exclude temporarily hidden ones, and aggregate by name
         const hiddenItems = JSON.parse(localStorage.getItem('hiddenShoppingItems') || '[]');
-        itemsToRender = fullList
-          .filter(item => item.recurring && !hiddenItems.includes(item.name))
-          .sort((a, b) => a.quantity - b.quantity);
+        const filteredItems = fullList.filter(item => item.recurring && !hiddenItems.includes(item.name));
+
+        // Aggregate items by name, summing quantities
+        const aggregatedItems = {};
+        filteredItems.forEach(item => {
+          if (aggregatedItems[item.name]) {
+            aggregatedItems[item.name].quantity += parseInt(item.quantity);
+          } else {
+            aggregatedItems[item.name] = {
+              name: item.name,
+              quantity: parseInt(item.quantity),
+              // Keep the first item's other properties for reference
+              duration: item.duration,
+              recurring: item.recurring
+            };
+          }
+        });
+
+        // Convert back to array and sort by quantity
+        itemsToRender = Object.values(aggregatedItems).sort((a, b) => a.quantity - b.quantity);
       } else {
         // Normal mode: show all items sorted by date
         itemsToRender = fullList; // Already sorted by date from the listener
