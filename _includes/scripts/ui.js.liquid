@@ -1,67 +1,102 @@
-// finds when the add item modal is shown and clear the form
-// also update needed information
+/**
+ * Add Item Modal Event Handler
+ * Prepares the modal when shown, including form reset, date setup, and category selection
+ */
 document.getElementById('add-item-modal').addEventListener('show.bs.modal', function (event) {
-  // Get the element that triggered the modal, e.g., the floating action button.
   const button = event.relatedTarget;
 
-  // ONLY reset the form if the modal was opened by a data-bs-toggle button.
-  // This prevents it from resetting when opened programmatically from the shopping list.
+  // Only reset form if modal was opened by a data-bs-toggle button
+  // This prevents resetting when opened programmatically from shopping list
   if (button) {
-    document.getElementById('new-item-name').value = "";
-    document.getElementById('new-item-quantity').value = "";
-    document.getElementById('new-item-duration').value = "";
-    document.getElementById('add-item-modal-title').textContent = '{{ page.add_item }}';
+    resetAddItemForm();
   }
 
-  // update the date input and its min value to the current date
+  setupExpirationDate();
+  clearDatalistOptions();
+  updateCategoryDropdown();
+
+  const currentCategory = getCurrentActiveCategory();
+  if (currentCategory) {
+    setSelectedCategory(currentCategory);
+    loadCategoryHistory(currentCategory);
+  }
+});
+
+/**
+ * Reset the add item form to its default state
+ */
+function resetAddItemForm() {
+  document.getElementById('new-item-name').value = "";
+  document.getElementById('new-item-quantity').value = "";
+  document.getElementById('new-item-duration').value = "";
+  document.getElementById('add-item-modal-title').textContent = '{{ page.add_item }}';
+}
+
+/**
+ * Setup expiration date input with current date as default and minimum
+ */
+function setupExpirationDate() {
   const expiringDateElement = document.getElementById('new-item-expiring-date');
   const currentDate = new Date();
   expiringDateElement.min = currentDate.toISOString().split('T')[0];
   expiringDateElement.valueAsDate = currentDate;
+}
 
-  // clear the datalist options
+/**
+ * Clear all datalist options for autocomplete
+ */
+function clearDatalistOptions() {
   const datalistOptions = document.getElementById('datalistOptions');
   while (datalistOptions.firstChild) {
     datalistOptions.removeChild(datalistOptions.firstChild);
   }
+}
 
-  // Update category dropdown
-  updateCategoryDropdown();
-
-  // Determine which category is active
+/**
+ * Get the currently active category from the tab navigation
+ * @returns {string|null} The active category key or null if none found
+ */
+function getCurrentActiveCategory() {
   const activeTab = document.querySelector('.nav-link.active');
-  if (!activeTab) return;
+  return activeTab ? activeTab.getAttribute('data-category') : null;
+}
 
-  const currentCategory = activeTab.getAttribute('data-category');
-  if (!currentCategory) return;
-
-  // Set the category dropdown to the current tab
+/**
+ * Set the selected category in the dropdown
+ * @param {string} categoryKey - The category key to select
+ */
+function setSelectedCategory(categoryKey) {
   const categorySelect = document.getElementById('new-item-category');
   if (categorySelect) {
-    categorySelect.value = currentCategory;
+    categorySelect.value = categoryKey;
   }
+}
 
-  if (!currentUser) return; // Exit if user is not logged in
+/**
+ * Load historical items for autocomplete suggestions
+ * @param {string} categoryKey - The category to load history for
+ */
+function loadCategoryHistory(categoryKey) {
+  if (!currentUser) return;
 
-  // Fetch history from Firestore for the current category
   db.collection('users').doc(currentUser.uid).collection('item_history')
-    .where('category', '==', currentCategory)
+    .where('category', '==', categoryKey)
     .get()
     .then(querySnapshot => {
+      const datalistOptions = document.getElementById('datalistOptions');
       querySnapshot.forEach(doc => {
         const item = doc.data();
         const option = document.createElement("option");
-        datalistOptions.appendChild(option);
         option.value = item.name;
         option.setAttribute("data-duration", item.duration);
-        // Set the recurring attribute, defaulting to false if not present
         option.setAttribute("data-recurring", item.recurring || false);
+        datalistOptions.appendChild(option);
       });
     })
     .catch(error => {
-      console.error("Error getting history documents: ", error);
+      console.error("Error loading category history: ", error);
     });
-});
+}
 
 document.getElementById('add-item-modal').querySelector('form').addEventListener("submit", addItemFromForm);
 
@@ -73,133 +108,193 @@ document.getElementById('add-item-modal').addEventListener('hidden.bs.modal', fu
   }
 });
 
+/**
+ * Edit Item Modal Event Handler
+ * Prepares the edit modal with item details and quantity controls
+ */
 document.getElementById('edit-item-modal').addEventListener('show.bs.modal', function (event) {
   const button = event.relatedTarget;
-  const id = button.getAttribute('data-bs-id');
+  const itemId = button.getAttribute('data-bs-id');
   const category = button.getAttribute('data-category');
 
-  // Find the item in the appropriate category
-  let item = null;
-  if (window.itemsByCategory && window.itemsByCategory[category]) {
-    item = window.itemsByCategory[category][id];
-  }
-
+  const item = findItem(category, itemId);
   if (!item) return;
 
-  const name = item.name;
-  const quantity = item.quantity;
-  const formElement = document.getElementById('edit-item-modal').querySelector('form');
+  setupEditModalForm(itemId, category, item);
+  setupQuantityControls(item.quantity);
+});
 
-  formElement.setAttribute("data-item-id", id);
+/**
+ * Find an item by category and ID
+ * @param {string} category - The category key
+ * @param {string} itemId - The item ID
+ * @returns {Object|null} The item object or null if not found
+ */
+function findItem(category, itemId) {
+  if (window.itemsByCategory && window.itemsByCategory[category]) {
+    return window.itemsByCategory[category][itemId];
+  }
+  return null;
+}
+
+/**
+ * Setup the edit modal form with item data
+ * @param {string} itemId - The item ID
+ * @param {string} category - The category key
+ * @param {Object} item - The item data
+ */
+function setupEditModalForm(itemId, category, item) {
+  const formElement = document.getElementById('edit-item-modal').querySelector('form');
+  formElement.setAttribute("data-item-id", itemId);
   formElement.setAttribute("data-category", category);
 
-  document.getElementById('edit-item-modal-title').textContent = '{{ page.edit }} ' + name;
+  document.getElementById('edit-item-modal-title').textContent = '{{ page.edit }} ' + item.name;
+}
 
-  const openedItemsElement = document.getElementById('opened-items');
-  const consumedItemsElement = document.getElementById('consumed-items');
-  const discardedItemsElement = document.getElementById('discarded-items');
+/**
+ * Setup quantity control inputs with dynamic max values
+ * @param {number} totalQuantity - The total quantity of the item
+ */
+function setupQuantityControls(totalQuantity) {
+  const openedInput = document.getElementById('opened-items');
+  const consumedInput = document.getElementById('consumed-items');
+  const discardedInput = document.getElementById('discarded-items');
 
   // Reset values and set initial max
-  openedItemsElement.value = 0;
-  consumedItemsElement.value = 0;
-  discardedItemsElement.value = 0;
-  openedItemsElement.max = quantity;
-  consumedItemsElement.max = quantity;
-  discardedItemsElement.max = quantity;
+  [openedInput, consumedInput, discardedInput].forEach(input => {
+    input.value = 0;
+    input.max = totalQuantity;
+  });
 
+  /**
+   * Update maximum values based on current input values
+   * Ensures total doesn't exceed available quantity
+   */
   const updateMaxValues = () => {
-    const openedVal = parseInt(openedItemsElement.value) || 0;
-    const consumedVal = parseInt(consumedItemsElement.value) || 0;
-    const discardedVal = parseInt(discardedItemsElement.value) || 0;
+    const openedVal = parseInt(openedInput.value) || 0;
+    const consumedVal = parseInt(consumedInput.value) || 0;
+    const discardedVal = parseInt(discardedInput.value) || 0;
 
-    openedItemsElement.max = quantity - (consumedVal + discardedVal);
-    consumedItemsElement.max = quantity - (openedVal + discardedVal);
-    discardedItemsElement.max = quantity - (openedVal + consumedVal);
+    openedInput.max = totalQuantity - (consumedVal + discardedVal);
+    consumedInput.max = totalQuantity - (openedVal + discardedVal);
+    discardedInput.max = totalQuantity - (openedVal + consumedVal);
   };
 
-  openedItemsElement.addEventListener('input', updateMaxValues);
-  consumedItemsElement.addEventListener('input', updateMaxValues);
-  discardedItemsElement.addEventListener('input', updateMaxValues);
-});
+  // Add event listeners for dynamic max value updates
+  [openedInput, consumedInput, discardedInput].forEach(input => {
+    input.addEventListener('input', updateMaxValues);
+  });
+}
 
 document.getElementById('edit-item-modal').querySelector('form').addEventListener("submit", editItem);
 
+/**
+ * Auto-fill form fields when an item name is selected from history
+ */
 document.getElementById('new-item-name').addEventListener('change', function (event) {
-  const datalist = document.getElementById('new-item-name');
-  const options = Array.from(document.getElementById('datalistOptions').children);
+  const selectedName = document.getElementById('new-item-name').value;
+  const historyOptions = Array.from(document.getElementById('datalistOptions').children);
 
-  options.forEach((option) => {
-    if (option.value === datalist.value) {
-      document.getElementById('new-item-duration').value = option.getAttribute("data-duration");
-      document.getElementById('recurring-purchase-checkbox').checked = option.getAttribute("data-recurring") === "true";
-      return;
-    }
-  });
+  const matchingOption = historyOptions.find(option => option.value === selectedName);
+  if (matchingOption) {
+    document.getElementById('new-item-duration').value = matchingOption.getAttribute("data-duration");
+    document.getElementById('recurring-purchase-checkbox').checked = matchingOption.getAttribute("data-recurring") === "true";
+  }
 });
 
+/**
+ * Handle edit item form submission
+ * Processes opened, consumed, and discarded quantities
+ * @param {Event} e - The form submit event
+ */
 function editItem(e) {
-  // prevent default - we don't want the form to submit in the conventional way
   e.preventDefault();
 
   const category = e.target.getAttribute("data-category");
-  const id = e.target.getAttribute("data-item-id");
-
-  // Find the item in the appropriate category
-  let item = null;
-  if (window.itemsByCategory && window.itemsByCategory[category]) {
-    item = window.itemsByCategory[category][id];
-  }
+  const itemId = e.target.getAttribute("data-item-id");
+  const item = findItem(category, itemId);
 
   if (!item) {
     console.error("Item not found for editing!");
     return;
   }
 
-  const openedItems = parseInt(document.getElementById('opened-items').value);
-  const consumedItems = parseInt(document.getElementById('consumed-items').value);
-  const discardedItems = parseInt(document.getElementById('discarded-items').value);
-  const totalActioned = openedItems + consumedItems + discardedItems;
+  const quantityInputs = getQuantityInputs();
+  const totalActioned = quantityInputs.opened + quantityInputs.consumed + quantityInputs.discarded;
 
-  if (totalActioned > item.quantity) {
-    alert('The sum of opened, consumed, and discarded items cannot be greater than the available quantity.');
-    return; // Stop the function before any database calls
-  }
-
-  if (totalActioned === 0) {
-    // If no changes are made, we can just close the modal without an error
-    // To get the modal instance and hide it:
-    const modalElement = document.getElementById('edit-item-modal');
-    const modalInstance = bootstrap.Modal.getInstance(modalElement);
-    modalInstance.hide();
+  if (!validateQuantities(totalActioned, item.quantity)) {
     return;
   }
 
-  // Collect all promises for database operations
+  if (totalActioned === 0) {
+    closeEditModal();
+    return;
+  }
+
+  processItemActions(itemId, item, category, quantityInputs);
+}
+
+/**
+ * Get quantity values from form inputs
+ * @returns {Object} Object containing opened, consumed, and discarded quantities
+ */
+function getQuantityInputs() {
+  return {
+    opened: parseInt(document.getElementById('opened-items').value) || 0,
+    consumed: parseInt(document.getElementById('consumed-items').value) || 0,
+    discarded: parseInt(document.getElementById('discarded-items').value) || 0
+  };
+}
+
+/**
+ * Validate that quantities don't exceed available amount
+ * @param {number} totalActioned - Sum of all actions
+ * @param {number} availableQuantity - Available item quantity
+ * @returns {boolean} True if valid, false otherwise
+ */
+function validateQuantities(totalActioned, availableQuantity) {
+  if (totalActioned > availableQuantity) {
+    alert('The sum of opened, consumed, and discarded items cannot be greater than the available quantity.');
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Close the edit modal
+ */
+function closeEditModal() {
+  const modalElement = document.getElementById('edit-item-modal');
+  const modalInstance = bootstrap.Modal.getInstance(modalElement);
+  modalInstance.hide();
+}
+
+/**
+ * Process all item actions (open, consume, discard)
+ * @param {string} itemId - The item ID
+ * @param {Object} item - The item data
+ * @param {string} category - The category key
+ * @param {Object} quantities - Object with opened, consumed, discarded quantities
+ */
+function processItemActions(itemId, item, category, quantities) {
   const promises = [];
 
-  if (openedItems > 0) {
-    promises.push(openItem(id, openedItems, item, category));
+  if (quantities.opened > 0) {
+    promises.push(openItem(itemId, quantities.opened, item, category));
+  }
+  if (quantities.consumed > 0) {
+    promises.push(consumeItem(itemId, quantities.consumed, item, category));
+  }
+  if (quantities.discarded > 0) {
+    promises.push(discardItem(itemId, quantities.discarded, item, category));
   }
 
-  if (consumedItems > 0) {
-    promises.push(consumeItem(id, consumedItems, items, table));
-  }
-
-  if (discardedItems > 0) {
-    promises.push(discardItem(id, discardedItems, items, table));
-  }
-
-  // Wait for all operations to complete, then close modal
-  Promise.all(promises).then(() => {
-    // All operations successful, close modal
-    const modalElement = document.getElementById('edit-item-modal');
-    const modalInstance = bootstrap.Modal.getInstance(modalElement);
-    modalInstance.hide();
-  }).catch(error => {
-    // Handle error - modal will stay open
-    console.error("Failed to edit item:", error);
-    alert('An error occurred while updating the item. Please try again.');
-  });
+  Promise.all(promises)
+    .then(() => closeEditModal())
+    .catch(error => {
+      console.error("Failed to edit item:", error);
+      alert('An error occurred while updating the item. Please try again.');
+    });
 }
 
 function openItem(id, quantity, item, category) {
@@ -607,17 +702,17 @@ function updateCategoriesList() {
         </div>
       </div>
     `;
-    
+
     categoriesList.appendChild(categoryItem);
-    
+
     // Add event listeners for the buttons
     const editBtn = categoryItem.querySelector('[data-action="edit"]');
     const deleteBtn = categoryItem.querySelector('[data-action="delete"]');
-    
+
     editBtn.addEventListener('click', () => {
       editCategory(category.id, category.name, category.key);
     });
-    
+
     deleteBtn.addEventListener('click', () => {
       confirmDeleteCategory(category.id, category.name);
     });

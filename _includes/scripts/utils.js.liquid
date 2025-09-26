@@ -1,80 +1,101 @@
+/**
+ * Sort items by expiration date, opened status, and quantity
+ * @param {Object} items - Object containing items to sort
+ * @param {Array} sortedItems - Array to populate with sorted items
+ */
 function sortItems(items, sortedItems) {
   sortedItems.length = 0;
   sortedItems.push(...Object.values(items));
-  // sort the items by expiring date, opened and quantity
-  sortedItems.sort((a, b) => a.expiring_date - b.expiring_date || b.opened - a.opened || b.quantity - a.quantity);
+
+  // Sort by: 1) expiring date (earliest first), 2) opened status (opened first), 3) quantity (highest first)
+  sortedItems.sort((a, b) =>
+    a.expiring_date - b.expiring_date ||
+    b.opened - a.opened ||
+    b.quantity - a.quantity
+  );
 }
 
-// Register service worker to control making site work offline
-if('serviceWorker' in navigator) {
-  navigator.serviceWorker
-  .register('/assets/js/sw.js');
+// Register service worker for offline functionality
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/assets/js/sw.js');
 }
 
-// run a callback every day
+/**
+ * Execute a callback function every day at the same time
+ * @param {Function} callback - The function to execute daily
+ */
 const everyDay = (callback) => {
   const now = new Date();
-  setTimeout(async () =>
-    {
-      await callback();
-      everyDay(callback);
-    }
-    , 24 * 3600000 - now.getHours() * 3600000 - now.getMinutes() * 60000 - now.getSeconds() * 1000 - now.getMilliseconds()
-  )
+  const millisecondsUntilMidnight =
+    24 * 3600000 -
+    now.getHours() * 3600000 -
+    now.getMinutes() * 60000 -
+    now.getSeconds() * 1000 -
+    now.getMilliseconds();
+
+  setTimeout(async () => {
+    await callback();
+    everyDay(callback); // Schedule next execution
+  }, millisecondsUntilMidnight);
 };
 
+/**
+ * Check and update visual indicators for item expiration status
+ * @param {Object} item - The item to check
+ * @param {number} idx - The index of the item in the list
+ * @returns {boolean} True if processing should continue, false to stop
+ */
 function checkExpiryDateInList(item, idx) {
   const now = DateTime.now();
+  const expirationDate = DateTime.fromISO(item.expiring_date);
+  const listItem = document.getElementById(this.listId).children[idx].children[0];
 
-  if (DateTime.fromISO(item.expiring_date) < now) {
-    // mark item inside list as danger
-    const listItem = document.getElementById(this.listId).children[idx].children[0];
-
+  if (expirationDate < now) {
+    // Item has expired - mark as danger
     if (listItem.classList.contains('list-group-item-danger')) {
-      return false;
+      return false; // Already marked, no change needed
     }
 
-    if (listItem.classList.contains('list-group-item-warning')) {
-      listItem.classList.remove('list-group-item-warning');
-    }
-
+    listItem.classList.remove('list-group-item-warning');
     listItem.classList.add('list-group-item-danger');
 
   } else {
-    const diffDays = Interval.fromDateTimes(now, item.expiring_date).length('days');
+    const daysUntilExpiry = Interval.fromDateTimes(now, expirationDate).length('days');
 
-    if (diffDays <= 3) {
-      // less than 3 days left, mark item as warning
-      const listItem = document.getElementById(this.listId).children[idx].children[0];
+    if (daysUntilExpiry <= 3) {
+      // Item expires within 3 days - mark as warning
       if (listItem.classList.contains('list-group-item-warning')) {
-        return false;
+        return false; // Already marked, no change needed
       }
 
       listItem.classList.add('list-group-item-warning');
 
     } else {
-      // since the items are sorted by expiry date, we can break the loop
+      // Item is fine - since items are sorted by expiry date, we can stop checking
       return true;
     }
   }
+
   return false;
 }
 
+/**
+ * Check expiry dates for all items across all categories
+ * Updates UI indicators for expired and soon-to-expire items
+ */
 function checkExpiryDates() {
-  // check for expired items in all categories
-  if (window.userCategories && window.sortedItemsByCategory) {
-    window.userCategories.forEach(category => {
-      const sortedItems = window.sortedItemsByCategory[category.key];
-      if (sortedItems && sortedItems.length > 0) {
-        sortedItems.some(
-          // 1st Argument to some: callback
-          checkExpiryDateInList,
-          // 2nd Argument to some: thisArg
-          { listId: `${category.key}-list` }
-        );
-      }
-    });
+  if (!window.userCategories || !window.sortedItemsByCategory) {
+    return;
   }
+
+  window.userCategories.forEach(category => {
+    const sortedItems = window.sortedItemsByCategory[category.key];
+
+    if (sortedItems && sortedItems.length > 0) {
+      // Use 'some' to allow early termination when items are no longer near expiry
+      sortedItems.some(checkExpiryDateInList, { listId: `${category.key}-list` });
+    }
+  });
 }
 
 everyDay(checkExpiryDates);
