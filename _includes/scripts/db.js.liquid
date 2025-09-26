@@ -1,10 +1,11 @@
-function addHistoryData(name, duration, recurring, table) {
+function addHistoryData(name, duration, recurring, category) {
   if (!currentUser || !name) return; // Do not save if not logged in or name is empty
 
   // Use the item name as the document ID to prevent duplicate history entries.
   // .set() with { merge: true } will create the document or update it if it already exists.
-  db.collection('households').doc(currentUser.uid).collection(table).doc(name).set({
+  db.collection('users').doc(currentUser.uid).collection('item_history').doc(`${category}_${name}`).set({
       name: name,
+      category: category,
       duration: duration || "", // Save duration, or an empty string if not provided
       recurring: recurring || false // Save recurring, or false if not provided
     }, { merge: true })
@@ -16,9 +17,9 @@ function addHistoryData(name, duration, recurring, table) {
     });
 }
 
-function addData(newItem, table) {
+function addData(newItem) {
   if (!currentUser) return Promise.reject("User not authenticated");
-  return db.collection('households').doc(currentUser.uid).collection(table).add(newItem)
+  return db.collection('users').doc(currentUser.uid).collection('items').add(newItem)
     .then(docRef => {/* Document written */})
     .catch(error => {
       console.error("Error adding document: ", error);
@@ -26,7 +27,7 @@ function addData(newItem, table) {
     });
 }
 
-function setupRealtimeListener(listElement, sortedItems, table) {
+function setupRealtimeListener(category) {
   if (!currentUser) return;
 
   const fuseOptions = {
@@ -35,90 +36,35 @@ function setupRealtimeListener(listElement, sortedItems, table) {
     isCaseSensitive: false,
   };
 
-  // // Get a reference to the search container for this tab
-  // const searchContainer = document.getElementById(`${table}-search-container`);
-
-  db.collection('households').doc(currentUser.uid).collection(table)
+  return db.collection('users').doc(currentUser.uid).collection('items')
+    .where('category', '==', category)
     .orderBy("expiring_date", "asc")
     .onSnapshot(querySnapshot => {
-      let currentItemsObject;
-      // Clear and re-assign the global variable
-      if (table === FOODS_TABLE) {
-        foodItems = {};
-        currentItemsObject = foodItems;
-      } else if (table === UTILITIES_TABLE) {
-        utilityItems = {};
-        currentItemsObject = utilityItems;
-      } else if (table === MEDICINES_TABLE) {
-        medicineItems = {};
-        currentItemsObject = medicineItems;
-      } else {
-        console.error("Unknown table: ", table);
-        return;
-      }
+      const categoryItems = {};
 
-      // Clear the list in the UI
-      while (listElement.firstChild) {
-        listElement.removeChild(listElement.firstChild);
-      }
-
-      // Repopulate the global object with fresh data
+      // Populate the category items object with fresh data
       querySnapshot.forEach(doc => {
         const data = doc.data();
-        currentItemsObject[doc.id] = {
+        categoryItems[doc.id] = {
           id: doc.id,
           ...data,
           expiring_date: DateTime.fromISO(data.expiring_date)
         };
       });
 
-      sortItems(currentItemsObject, sortedItems);
+      // Update the global items object for this category
+      if (!window.itemsByCategory) window.itemsByCategory = {};
+      if (!window.sortedItemsByCategory) window.sortedItemsByCategory = {};
+      if (!window.fuseByCategory) window.fuseByCategory = {};
 
-      // Create or update the Fuse.js index for the correct tab
-      if (table === FOODS_TABLE) {
-        foodsFuse = new Fuse(sortedItems, fuseOptions);
-      } else if (table === UTILITIES_TABLE) {
-        utilitiesFuse = new Fuse(sortedItems, fuseOptions);
-      } else if (table === MEDICINES_TABLE) {
-        medicinesFuse = new Fuse(sortedItems, fuseOptions);
-      }
+      window.itemsByCategory[category] = categoryItems;
 
-      // // Render the full list initially
-      // if (sortedItems.length === 0) {
-      //   // Hide search bar if list is empty
-      //   if (searchContainer) searchContainer.style.display = 'none';
+      // Sort items for this category
+      window.sortedItemsByCategory[category] = [];
+      sortItems(categoryItems, window.sortedItemsByCategory[category]);
 
-      //   const li = document.createElement("li");
-      //   li.classList.add("list-group-item");
-      //   li.textContent = "{{ page.no_items }}";
-      //   listElement.appendChild(li);
-      // } else {
-      //   // Show search bar if list has items
-      //   if (searchContainer) searchContainer.style.display = '';
-
-      //   for (const item of sortedItems) {
-      //     const li = document.createElement("li");
-      //     // Add a unique ID to each list item
-      //     li.id = `item-${item.id}`;
-      //     li.setAttribute("data-item-id", item.id);
-      //     li.innerHTML = `
-      //       <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-bs-toggle="modal" data-bs-target="#edit-item-modal" data-bs-id="${item.id}">
-      //         <div class="d-flex align-items-center">
-      //           <div class="ms-2 me-auto">
-      //             <div class="fw-bold">${item.name}</div>
-      //             ${DateTime.fromISO(item.expiring_date).setLocale('{{ site.active_lang }}').toRelative()}
-      //           </div>
-      //         </div>
-      //         <div class="d-flex align-items-center">
-      //           <span class="badge text-bg-primary rounded-pill">${item.quantity}</span>
-      //           <span class="ms-2"><i class="fa-solid fa-chevron-right"></i></span>
-      //         </div>
-      //       </button>
-      //     `;
-      //     listElement.appendChild(li);
-      //   }
-      // }
-      // checkExpiryDates();
+      // Create or update the Fuse.js index for this category
+      window.fuseByCategory[category] = new Fuse(window.sortedItemsByCategory[category], fuseOptions);
 
       updateDisplay(); // Fire and forget - don't wait for this async call
     }, error => {
@@ -127,7 +73,7 @@ function setupRealtimeListener(listElement, sortedItems, table) {
   );
 }
 
-function editData(editedItem, table) {
+function editData(editedItem) {
   if (!currentUser) return;
 
   // 1. Create a copy of the item's data.
@@ -137,7 +83,7 @@ function editData(editedItem, table) {
   delete dataToUpdate.id;
 
   // 3. Perform the update.
-  db.collection('households').doc(currentUser.uid).collection(table).doc(editedItem.id).update(dataToUpdate)
+  db.collection('users').doc(currentUser.uid).collection('items').doc(editedItem.id).update(dataToUpdate)
     .then(() => {
       // Document successfully updated
     })
@@ -146,8 +92,206 @@ function editData(editedItem, table) {
     });
 }
 
-function deleteData(id, table) {
+function deleteData(id) {
   if (!currentUser) return;
-  db.collection('households').doc(currentUser.uid).collection(table).doc(id).delete()
+  db.collection('users').doc(currentUser.uid).collection('items').doc(id).delete()
     .catch(error => console.error("Error deleting document: ", error));
+}
+
+// Category management functions
+function addCategory(categoryData) {
+  if (!currentUser) return Promise.reject("User not authenticated");
+  return db.collection('users').doc(currentUser.uid).collection('categories').add(categoryData)
+    .then(docRef => {
+      console.log("Category added with ID: ", docRef.id);
+      return docRef.id;
+    })
+    .catch(error => {
+      console.error("Error adding category: ", error);
+      throw error;
+    });
+}
+
+function updateCategory(categoryId, categoryData) {
+  if (!currentUser) return Promise.reject("User not authenticated");
+  return db.collection('users').doc(currentUser.uid).collection('categories').doc(categoryId).update(categoryData)
+    .then(() => {
+      console.log("Category updated successfully");
+    })
+    .catch(error => {
+      console.error("Error updating category: ", error);
+      throw error;
+    });
+}
+
+function deleteCategory(categoryId) {
+  if (!currentUser) return Promise.reject("User not authenticated");
+  return db.collection('users').doc(currentUser.uid).collection('categories').doc(categoryId).delete()
+    .then(() => {
+      console.log("Category deleted successfully");
+    })
+    .catch(error => {
+      console.error("Error deleting category: ", error);
+      throw error;
+    });
+}
+
+function setupCategoriesListener() {
+  if (!currentUser) return;
+
+  return db.collection('users').doc(currentUser.uid).collection('categories')
+    .orderBy('order', 'asc')
+    .onSnapshot(querySnapshot => {
+      window.userCategories = [];
+
+      querySnapshot.forEach(doc => {
+        window.userCategories.push({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
+
+      // If no categories exist, create default ones
+      if (window.userCategories.length === 0) {
+        initializeDefaultCategories();
+      } else {
+        updateCategoryTabs();
+        setupCategoryListeners();
+      }
+    }, error => {
+      console.error("Categories listener error: ", error);
+    });
+}
+
+async function initializeDefaultCategories() {
+  const defaultCategories = [
+    { name: '{{ page.foods }}', key: 'foods', order: 0 },
+    { name: '{{ page.utilities }}', key: 'utilities', order: 1 },
+    { name: '{{ page.medicines }}', key: 'medicines', order: 2 }
+  ];
+
+  try {
+    const batch = db.batch();
+    defaultCategories.forEach(category => {
+      const docRef = db.collection('users').doc(currentUser.uid).collection('categories').doc();
+      batch.set(docRef, category);
+    });
+    await batch.commit();
+    console.log("Default categories created");
+  } catch (error) {
+    console.error("Error creating default categories: ", error);
+  }
+}
+
+async function migrateExistingData() {
+  if (!currentUser) return;
+
+  try {
+    // Check if migration has already been done by looking for categories
+    const categoriesSnapshot = await db.collection('users').doc(currentUser.uid).collection('categories').get();
+    if (!categoriesSnapshot.empty) {
+      console.log("Categories already exist, skipping migration");
+      return;
+    }
+
+    // Check if old data exists
+    const oldDataExists = await checkOldDataExists();
+    if (!oldDataExists) {
+      console.log("No old data to migrate");
+      return;
+    }
+
+    console.log("Starting data migration...");
+
+    // Create default categories first
+    await initializeDefaultCategories();
+
+    // Wait a bit for categories to be created
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Migrate items from old collections
+    const migrations = [
+      { oldCollection: 'foods', category: 'foods' },
+      { oldCollection: 'utilities', category: 'utilities' },
+      { oldCollection: 'medicines', category: 'medicines' }
+    ];
+
+    const batch = db.batch();
+    let itemCount = 0;
+
+    for (const migration of migrations) {
+      const oldSnapshot = await db.collection('households').doc(currentUser.uid).collection(migration.oldCollection).get();
+
+      oldSnapshot.forEach(doc => {
+        const data = doc.data();
+        const newItemRef = db.collection('users').doc(currentUser.uid).collection('items').doc();
+        batch.set(newItemRef, {
+          ...data,
+          category: migration.category
+        });
+        itemCount++;
+      });
+    }
+
+    if (itemCount > 0) {
+      await batch.commit();
+      console.log(`Migrated ${itemCount} items to new structure`);
+    }
+
+    // Migrate history data
+    await migrateHistoryData();
+
+  } catch (error) {
+    console.error("Error during migration: ", error);
+  }
+}
+
+async function checkOldDataExists() {
+  try {
+    const collections = ['foods', 'utilities', 'medicines'];
+    for (const collection of collections) {
+      const snapshot = await db.collection('households').doc(currentUser.uid).collection(collection).limit(1).get();
+      if (!snapshot.empty) {
+        return true;
+      }
+    }
+    return false;
+  } catch (error) {
+    console.error("Error checking old data: ", error);
+    return false;
+  }
+}
+
+async function migrateHistoryData() {
+  try {
+    const historyCollections = [
+      { old: 'foods_history', category: 'foods' },
+      { old: 'utilities_history', category: 'utilities' },
+      { old: 'medicines_history', category: 'medicines' }
+    ];
+
+    const batch = db.batch();
+    let historyCount = 0;
+
+    for (const historyCollection of historyCollections) {
+      const oldHistorySnapshot = await db.collection('households').doc(currentUser.uid).collection(historyCollection.old).get();
+
+      oldHistorySnapshot.forEach(doc => {
+        const data = doc.data();
+        const newHistoryRef = db.collection('users').doc(currentUser.uid).collection('item_history').doc();
+        batch.set(newHistoryRef, {
+          ...data,
+          category: historyCollection.category
+        });
+        historyCount++;
+      });
+    }
+
+    if (historyCount > 0) {
+      await batch.commit();
+      console.log(`Migrated ${historyCount} history items to new structure`);
+    }
+  } catch (error) {
+    console.error("Error migrating history data: ", error);
+  }
 }

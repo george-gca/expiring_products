@@ -9,6 +9,13 @@
 
         <div class="modal-body">
           <div class="form-floating mb-3">
+            <select class="form-control" id="new-item-category" name="new-item-category" required>
+              <!-- Options will be populated dynamically -->
+            </select>
+            <label for="new-item-category">{{ page.category }}</label>
+          </div>
+
+          <div class="form-floating mb-3">
             <input class="form-control" list="datalistOptions" id="new-item-name" name="new-item-name" required>
             <datalist id="datalistOptions"></datalist>
             <label for="new-item-name">{{ page.item_name }}</label>
