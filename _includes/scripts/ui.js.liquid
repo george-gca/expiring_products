@@ -71,6 +71,14 @@ document.getElementById('add-item-modal').querySelector('form').addEventListener
 
 document.getElementById('add-item-modal').querySelector('form').addEventListener("submit", addItemFromForm);
 
+// Clean up shopping item reference when modal is hidden (in case user cancels)
+document.getElementById('add-item-modal').addEventListener('hidden.bs.modal', function () {
+  // Clear the shopping item reference if modal was closed without purchase
+  if (window.currentShoppingItem) {
+    window.currentShoppingItem = null;
+  }
+});
+
 document.getElementById('edit-item-modal').addEventListener('show.bs.modal', function (event) {
   const button = event.relatedTarget;
   const listElementId = button.parentElement.parentElement.id;
@@ -429,6 +437,24 @@ function addItemFromForm(e) {
     expiringDateInput.value = "";
     durationInput.value = "";
     document.getElementById('recurring-purchase-checkbox').checked = true;
+
+    // Handle shopping mode item hiding after successful purchase
+    if (window.currentShoppingItem) {
+      // Add item name to temporarily hidden shopping items
+      const hiddenItems = JSON.parse(localStorage.getItem('hiddenShoppingItems') || '[]');
+      if (!hiddenItems.includes(window.currentShoppingItem.name)) {
+        hiddenItems.push(window.currentShoppingItem.name);
+        localStorage.setItem('hiddenShoppingItems', JSON.stringify(hiddenItems));
+      }
+
+      // Clear the reference
+      window.currentShoppingItem = null;
+
+      // Refresh the display to immediately reflect the hidden item
+      if (typeof updateDisplay === 'function') {
+        updateDisplay();
+      }
+    }
 
     // Close the modal
     const modalElement = document.getElementById('add-item-modal');
