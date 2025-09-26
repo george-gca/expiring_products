@@ -1,32 +1,47 @@
+/**
+ * Add or update item history for autocomplete suggestions
+ * @param {string} name - The item name
+ * @param {string} duration - How long the item typically lasts
+ * @param {boolean} recurring - Whether this is a recurring purchase
+ * @param {string} category - The category key
+ */
 function addHistoryData(name, duration, recurring, category) {
-  if (!currentUser || !name) return; // Do not save if not logged in or name is empty
+  if (!currentUser || !name) return;
 
-  // Use the item name as the document ID to prevent duplicate history entries.
-  // .set() with { merge: true } will create the document or update it if it already exists.
-  db.collection('users').doc(currentUser.uid).collection('item_history').doc(`${category}_${name}`).set({
-      name: name,
-      category: category,
-      duration: duration || "", // Save duration, or an empty string if not provided
-      recurring: recurring || false // Save recurring, or false if not provided
-    }, { merge: true })
-    .then(() => {
-      // History item saved
-    })
-    .catch(error => {
-      console.error("Error writing history document: ", error);
-    });
+  // Use composite ID to prevent duplicate history entries per category
+  const historyDocId = `${category}_${name}`;
+
+  db.collection('users').doc(currentUser.uid).collection('item_history').doc(historyDocId).set({
+    name: name,
+    category: category,
+    duration: duration || "",
+    recurring: recurring || false
+  }, { merge: true })
+  .catch(error => {
+    console.error("Error saving item history: ", error);
+  });
 }
 
+/**
+ * Add a new item to the database
+ * @param {Object} newItem - The item data to add
+ * @returns {Promise} Promise that resolves when item is added
+ */
 function addData(newItem) {
   if (!currentUser) return Promise.reject("User not authenticated");
+
   return db.collection('users').doc(currentUser.uid).collection('items').add(newItem)
-    .then(docRef => {/* Document written */})
     .catch(error => {
-      console.error("Error adding document: ", error);
+      console.error("Error adding item: ", error);
       throw error;
     });
 }
 
+/**
+ * Setup real-time listener for items in a specific category
+ * @param {string} category - The category key to listen for
+ * @returns {Function} Unsubscribe function for the listener
+ */
 function setupRealtimeListener(category) {
   if (!currentUser) return;
 
@@ -42,7 +57,7 @@ function setupRealtimeListener(category) {
     .onSnapshot(querySnapshot => {
       const categoryItems = {};
 
-      // Populate the category items object with fresh data
+      // Process each item document
       querySnapshot.forEach(doc => {
         const data = doc.data();
         categoryItems[doc.id] = {
@@ -52,55 +67,80 @@ function setupRealtimeListener(category) {
         };
       });
 
-      // Update the global items object for this category
-      if (!window.itemsByCategory) window.itemsByCategory = {};
-      if (!window.sortedItemsByCategory) window.sortedItemsByCategory = {};
-      if (!window.fuseByCategory) window.fuseByCategory = {};
+      // Initialize global data structures if needed
+      initializeGlobalDataStructures();
 
-      window.itemsByCategory[category] = categoryItems;
+      // Update category-specific data
+      updateCategoryData(category, categoryItems, fuseOptions);
 
-      // Sort items for this category
-      window.sortedItemsByCategory[category] = [];
-      sortItems(categoryItems, window.sortedItemsByCategory[category]);
-
-      // Create or update the Fuse.js index for this category
-      window.fuseByCategory[category] = new Fuse(window.sortedItemsByCategory[category], fuseOptions);
-
-      updateDisplay(); // Fire and forget - don't wait for this async call
+      // Refresh UI display
+      updateDisplay();
     }, error => {
       console.error("Firestore listener error: ", error);
-    }
-  );
-}
-
-function editData(editedItem) {
-  if (!currentUser) return;
-
-  // 1. Create a copy of the item's data.
-  const dataToUpdate = { ...editedItem };
-
-  // 2. Remove the id from the data object, as it cannot be part of the update payload.
-  delete dataToUpdate.id;
-
-  // 3. Perform the update.
-  db.collection('users').doc(currentUser.uid).collection('items').doc(editedItem.id).update(dataToUpdate)
-    .then(() => {
-      // Document successfully updated
-    })
-    .catch(error => {
-      console.error("Error updating document: ", error);
     });
 }
 
-function deleteData(id) {
-  if (!currentUser) return;
-  db.collection('users').doc(currentUser.uid).collection('items').doc(id).delete()
-    .catch(error => console.error("Error deleting document: ", error));
+/**
+ * Initialize global data structures for category management
+ */
+function initializeGlobalDataStructures() {
+  if (!window.itemsByCategory) window.itemsByCategory = {};
+  if (!window.sortedItemsByCategory) window.sortedItemsByCategory = {};
+  if (!window.fuseByCategory) window.fuseByCategory = {};
 }
 
-// Category management functions
+/**
+ * Update data structures for a specific category
+ * @param {string} category - The category key
+ * @param {Object} categoryItems - Items for this category
+ * @param {Object} fuseOptions - Fuse.js configuration options
+ */
+function updateCategoryData(category, categoryItems, fuseOptions) {
+  window.itemsByCategory[category] = categoryItems;
+
+  // Sort items for this category
+  window.sortedItemsByCategory[category] = [];
+  sortItems(categoryItems, window.sortedItemsByCategory[category]);
+
+  // Create or update the Fuse.js search index for this category
+  window.fuseByCategory[category] = new Fuse(window.sortedItemsByCategory[category], fuseOptions);
+}
+
+/**
+ * Update an existing item in the database
+ * @param {Object} editedItem - The item data to update (must include id)
+ */
+function editData(editedItem) {
+  if (!currentUser) return;
+
+  const dataToUpdate = { ...editedItem };
+  delete dataToUpdate.id; // Remove ID as it's not part of the update payload
+
+  db.collection('users').doc(currentUser.uid).collection('items').doc(editedItem.id).update(dataToUpdate)
+    .catch(error => {
+      console.error("Error updating item: ", error);
+    });
+}
+
+/**
+ * Delete an item from the database
+ * @param {string} id - The item ID to delete
+ */
+function deleteData(id) {
+  if (!currentUser) return;
+
+  db.collection('users').doc(currentUser.uid).collection('items').doc(id).delete()
+    .catch(error => console.error("Error deleting item: ", error));
+}
+
+/**
+ * Add a new category to the database
+ * @param {Object} categoryData - The category data to add
+ * @returns {Promise<string>} Promise that resolves with the new category ID
+ */
 function addCategory(categoryData) {
   if (!currentUser) return Promise.reject("User not authenticated");
+
   return db.collection('users').doc(currentUser.uid).collection('categories').add(categoryData)
     .then(docRef => {
       console.log("Category added with ID: ", docRef.id);
@@ -112,8 +152,15 @@ function addCategory(categoryData) {
     });
 }
 
+/**
+ * Update an existing category in the database
+ * @param {string} categoryId - The category ID to update
+ * @param {Object} categoryData - The updated category data
+ * @returns {Promise} Promise that resolves when update is complete
+ */
 function updateCategory(categoryId, categoryData) {
   if (!currentUser) return Promise.reject("User not authenticated");
+
   return db.collection('users').doc(currentUser.uid).collection('categories').doc(categoryId).update(categoryData)
     .then(() => {
       console.log("Category updated successfully");
@@ -124,8 +171,14 @@ function updateCategory(categoryId, categoryData) {
     });
 }
 
+/**
+ * Delete a category from the database
+ * @param {string} categoryId - The category ID to delete
+ * @returns {Promise} Promise that resolves when deletion is complete
+ */
 function deleteCategory(categoryId) {
   if (!currentUser) return Promise.reject("User not authenticated");
+
   return db.collection('users').doc(currentUser.uid).collection('categories').doc(categoryId).delete()
     .then(() => {
       console.log("Category deleted successfully");
@@ -136,6 +189,11 @@ function deleteCategory(categoryId) {
     });
 }
 
+/**
+ * Setup real-time listener for user categories
+ * Updates the UI whenever categories are added, modified, or deleted
+ * @returns {Function} Unsubscribe function for the listener
+ */
 function setupCategoriesListener() {
   if (!currentUser) return;
 
@@ -151,147 +209,10 @@ function setupCategoriesListener() {
         });
       });
 
-      // If no categories exist, create default ones
-      if (window.userCategories.length === 0) {
-        initializeDefaultCategories();
-      } else {
-        updateCategoryTabs();
-        setupCategoryListeners();
-      }
+      // Update UI with current categories
+      updateCategoryTabs();
+      setupCategoryListeners();
     }, error => {
       console.error("Categories listener error: ", error);
     });
-}
-
-async function initializeDefaultCategories() {
-  const defaultCategories = [
-    { name: '{{ page.foods }}', key: 'foods', order: 0 },
-    { name: '{{ page.utilities }}', key: 'utilities', order: 1 },
-    { name: '{{ page.medicines }}', key: 'medicines', order: 2 }
-  ];
-
-  try {
-    const batch = db.batch();
-    defaultCategories.forEach(category => {
-      const docRef = db.collection('users').doc(currentUser.uid).collection('categories').doc();
-      batch.set(docRef, category);
-    });
-    await batch.commit();
-    console.log("Default categories created");
-  } catch (error) {
-    console.error("Error creating default categories: ", error);
-  }
-}
-
-async function migrateExistingData() {
-  if (!currentUser) return;
-
-  try {
-    // Check if migration has already been done by looking for categories
-    const categoriesSnapshot = await db.collection('users').doc(currentUser.uid).collection('categories').get();
-    if (!categoriesSnapshot.empty) {
-      console.log("Categories already exist, skipping migration");
-      return;
-    }
-
-    // Check if old data exists
-    const oldDataExists = await checkOldDataExists();
-    if (!oldDataExists) {
-      console.log("No old data to migrate");
-      return;
-    }
-
-    console.log("Starting data migration...");
-
-    // Create default categories first
-    await initializeDefaultCategories();
-
-    // Wait a bit for categories to be created
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Migrate items from old collections
-    const migrations = [
-      { oldCollection: 'foods', category: 'foods' },
-      { oldCollection: 'utilities', category: 'utilities' },
-      { oldCollection: 'medicines', category: 'medicines' }
-    ];
-
-    const batch = db.batch();
-    let itemCount = 0;
-
-    for (const migration of migrations) {
-      const oldSnapshot = await db.collection('households').doc(currentUser.uid).collection(migration.oldCollection).get();
-
-      oldSnapshot.forEach(doc => {
-        const data = doc.data();
-        const newItemRef = db.collection('users').doc(currentUser.uid).collection('items').doc();
-        batch.set(newItemRef, {
-          ...data,
-          category: migration.category
-        });
-        itemCount++;
-      });
-    }
-
-    if (itemCount > 0) {
-      await batch.commit();
-      console.log(`Migrated ${itemCount} items to new structure`);
-    }
-
-    // Migrate history data
-    await migrateHistoryData();
-
-  } catch (error) {
-    console.error("Error during migration: ", error);
-  }
-}
-
-async function checkOldDataExists() {
-  try {
-    const collections = ['foods', 'utilities', 'medicines'];
-    for (const collection of collections) {
-      const snapshot = await db.collection('households').doc(currentUser.uid).collection(collection).limit(1).get();
-      if (!snapshot.empty) {
-        return true;
-      }
-    }
-    return false;
-  } catch (error) {
-    console.error("Error checking old data: ", error);
-    return false;
-  }
-}
-
-async function migrateHistoryData() {
-  try {
-    const historyCollections = [
-      { old: 'foods_history', category: 'foods' },
-      { old: 'utilities_history', category: 'utilities' },
-      { old: 'medicines_history', category: 'medicines' }
-    ];
-
-    const batch = db.batch();
-    let historyCount = 0;
-
-    for (const historyCollection of historyCollections) {
-      const oldHistorySnapshot = await db.collection('households').doc(currentUser.uid).collection(historyCollection.old).get();
-
-      oldHistorySnapshot.forEach(doc => {
-        const data = doc.data();
-        const newHistoryRef = db.collection('users').doc(currentUser.uid).collection('item_history').doc();
-        batch.set(newHistoryRef, {
-          ...data,
-          category: historyCollection.category
-        });
-        historyCount++;
-      });
-    }
-
-    if (historyCount > 0) {
-      await batch.commit();
-      console.log(`Migrated ${historyCount} history items to new structure`);
-    }
-  } catch (error) {
-    console.error("Error migrating history data: ", error);
-  }
 }

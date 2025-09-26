@@ -1,44 +1,48 @@
 <script type="module">
   import { clearDatabase, exportToJson, importFromJson } from '/assets/js/idb-backup-and-restore.mjs';
 
+  // Luxon date library globals
   var DateTime = luxon.DateTime;
   var Interval = luxon.Interval;
 
-  // Global variables for dynamic categories
+  // Dynamic categories system globals
   window.userCategories = [];
   window.itemsByCategory = {};
   window.sortedItemsByCategory = {};
   window.fuseByCategory = {};
   window.categoryListeners = {};
 
-  // Function to fetch all recurring items from history tables
-  async function getAllRecurringItems() {
+  /**
+   * Fetches all recurring items from history for shopping mode
+   * @returns {Object} Object with category keys containing arrays of recurring items
+   */
+  async function getRecurringItemsForShopping() {
     if (!currentUser) return {};
 
     const recurringItems = {};
 
     try {
-      // Initialize recurring items object for each category
+      // Initialize empty arrays for each category
       window.userCategories.forEach(category => {
         recurringItems[category.key] = [];
       });
 
-      // Fetch from the unified history table
+      // Fetch recurring items from history
       const historySnapshot = await db.collection('users').doc(currentUser.uid).collection('item_history')
         .where('recurring', '==', true)
         .get();
 
-      // Process history items
+      // Process and categorize recurring items
       historySnapshot.forEach(doc => {
         const data = doc.data();
         const category = data.category;
         if (recurringItems[category]) {
           recurringItems[category].push({
-            id: `history_${doc.id}`, // Unique ID for history items
+            id: `history_${doc.id}`,
             name: data.name,
             duration: data.duration,
             recurring: true,
-            quantity: 0 // Default quantity for items not in pantry
+            quantity: 0 // Shopping items start with 0 quantity
           });
         }
       });
@@ -152,9 +156,6 @@
         localStorage.setItem('shoppingMode', e.target.checked);
         await updateDisplay(); // Re-render everything when mode changes
       });
-
-      // Start data migration if needed
-      await migrateExistingData();
 
       // Setup dynamic categories system
       setupCategoriesListener();
