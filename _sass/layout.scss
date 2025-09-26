@@ -10,3 +10,105 @@ body.is-loading #tabsContents {
     display: none;
   }
 }
+
+/* Mobile improvements */
+@media (max-width: 768px) {
+  /* Reduce body margins on mobile */
+  body {
+    margin: 1rem !important;
+  }
+
+  /* Make tabs more compact */
+  .nav-tabs .nav-link {
+    padding: 0.375rem 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  /* Stack tabs if needed */
+  .nav-tabs {
+    flex-wrap: wrap;
+  }
+
+  /* Compact shopping mode switch */
+  .form-check-label {
+    font-size: 0.875rem;
+  }
+
+  /* Improve settings section layout */
+  .settings-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .settings-actions .btn {
+    text-align: center;
+    font-size: 0.875rem;
+  }
+
+  /* Compact add category button */
+  #add-category-btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  /* Hide text in add category button on very small screens */
+  @media (max-width: 480px) {
+    #add-category-btn .btn-text {
+      display: none;
+    }
+  }
+
+  /* Category tab emoji support */
+  .nav-tabs .nav-link .category-emoji {
+    font-size: 1.2rem;
+  }
+
+  .nav-tabs .nav-link .category-name {
+    margin-left: 0.25rem;
+  }
+
+  /* On very small screens, hide category names and show only emojis */
+  @media (max-width: 480px) {
+    .nav-tabs .nav-link .category-name {
+      display: none;
+    }
+
+    .nav-tabs .nav-link {
+      min-width: 2.5rem;
+      text-align: center;
+    }
+
+    /* Also hide "Options" text on small screens */
+    .nav-tabs .nav-link .d-none.d-sm-inline {
+      display: none !important;
+    }
+  }
+
+  /* Improve search input on mobile */
+  .input-group input[type="search"] {
+    font-size: 1rem;
+  }
+
+  /* Better floating action button positioning */
+  .fixed-action-btn {
+    position: fixed !important;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 1050;
+  }
+
+  /* Improve modal dialogs on mobile */
+  .modal-dialog {
+    margin: 0.5rem;
+  }
+
+  /* Better card layout for categories */
+  .card {
+    border-radius: 0.5rem;
+  }
+
+  .card-body {
+    padding: 0.75rem;
+  }
+}

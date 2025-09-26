@@ -600,10 +600,13 @@ function updateCategoryDropdown() {
 document.addEventListener('DOMContentLoaded', function() {
   const addCategoryBtn = document.getElementById('add-category-btn');
   const newCategoryNameInput = document.getElementById('new-category-name');
+  const newCategoryEmojiInput = document.getElementById('new-category-emoji');
 
   if (addCategoryBtn) {
     addCategoryBtn.addEventListener('click', async function() {
       const categoryName = newCategoryNameInput.value.trim();
+      const categoryEmoji = newCategoryEmojiInput.value.trim() || '📦';
+
       if (!categoryName) {
         alert('Please enter a category name');
         return;
@@ -624,33 +627,47 @@ document.addEventListener('DOMContentLoaded', function() {
         await addCategory({
           name: categoryName,
           key: categoryKey,
+          emoji: categoryEmoji,
           order: newOrder
         });
         newCategoryNameInput.value = '';
+        newCategoryEmojiInput.value = '';
       } catch (error) {
         alert('Error adding category: ' + error.message);
       }
     });
 
-    // Allow Enter key to add category
-    newCategoryNameInput.addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
-        addCategoryBtn.click();
-      }
+    // Allow Enter key to add category from either input
+    [newCategoryNameInput, newCategoryEmojiInput].forEach(input => {
+      input.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          addCategoryBtn.click();
+        }
+      });
     });
   }
 });
 
 // Edit category function
 function editCategory(categoryId, currentName, currentKey) {
+  const category = window.userCategories.find(cat => cat.id === categoryId);
+  const currentEmoji = category?.emoji || '📦';
+
   const newName = prompt('Enter new category name:', currentName);
-  if (newName && newName.trim() !== currentName) {
-    const trimmedName = newName.trim();
-    updateCategory(categoryId, { name: trimmedName })
-      .catch(error => {
-        alert('Error updating category: ' + error.message);
-      });
+  if (!newName || newName.trim() === currentName) return;
+
+  const newEmoji = prompt('Enter emoji for category:', currentEmoji);
+  if (newEmoji === null) return; // User cancelled
+
+  const updates = { name: newName.trim() };
+  if (newEmoji !== currentEmoji) {
+    updates.emoji = newEmoji.trim() || '📦';
   }
+
+  updateCategory(categoryId, updates)
+    .catch(error => {
+      alert('Error updating category: ' + error.message);
+    });
 }
 
 // Confirm delete category function
