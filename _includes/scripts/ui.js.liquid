@@ -184,17 +184,32 @@ function editItem(e) {
     return;
   }
 
+  // Collect all promises for database operations
+  const promises = [];
+
   if (openedItems > 0) {
-    openItem(id, openedItems, items, table);
+    promises.push(openItem(id, openedItems, items, table));
   }
 
   if (consumedItems > 0) {
-    consumeItem(id, consumedItems, items, table);
+    promises.push(consumeItem(id, consumedItems, items, table));
   }
 
   if (discardedItems > 0) {
-    discardItem(id, discardedItems, items, table);
+    promises.push(discardItem(id, discardedItems, items, table));
   }
+
+  // Wait for all operations to complete, then close modal
+  Promise.all(promises).then(() => {
+    // All operations successful, close modal
+    const modalElement = document.getElementById('edit-item-modal');
+    const modalInstance = bootstrap.Modal.getInstance(modalElement);
+    modalInstance.hide();
+  }).catch(error => {
+    // Handle error - modal will stay open
+    console.error("Failed to edit item:", error);
+    alert('An error occurred while updating the item. Please try again.');
+  });
 }
 
 function openItem(id, quantity, items, table) {
@@ -219,7 +234,7 @@ function openItem(id, quantity, items, table) {
     .where('expiring_date', '==', expiringDateISO)
     .limit(1);
 
-  query.get().then(matchingItemsSnapshot => {
+  return query.get().then(matchingItemsSnapshot => {
     // 3. Run the database updates inside a safe transaction
     return db.runTransaction(async (transaction) => {
       // --- ALL READS MUST HAPPEN FIRST ---
@@ -264,6 +279,7 @@ function openItem(id, quantity, items, table) {
     // Open item transaction successfully committed!
   }).catch((error) => {
     console.error("Open item transaction failed: ", error);
+    throw error;
   });
 }
 
@@ -300,6 +316,7 @@ function consumeItem(id, quantity, items, table) {
     // Consume item transaction successful.
   }).catch((error) => {
     console.error("Consume item transaction failed: ", error);
+    throw error;
   });
 }
 
@@ -337,6 +354,7 @@ function discardItem(id, quantity, items, table) {
     // Discard item transaction successful.
   }).catch((error) => {
     console.error("Discard item transaction failed: ", error);
+    throw error;
   });
 }
 
@@ -402,15 +420,24 @@ function addItemFromForm(e) {
     duration: duration,
     date_opened: null,
     opened: false
-  }, table);
+  }, table).then(() => {
+    // Item added successfully, clear form and close modal
+    addHistoryData(nameInput.value, durationInput.value, recurring, history_table);
 
-  addHistoryData(nameInput.value, durationInput.value, recurring, history_table);
+    nameInput.value = "";
+    quantityInput.value = "";
+    expiringDateInput.value = "";
+    durationInput.value = "";
+    document.getElementById('recurring-purchase-checkbox').checked = true;
 
-  nameInput.value = "";
-  quantityInput.value = "";
-  expiringDateInput.value = "";
-  durationInput.value = "";
-  recurring.checked = true;
+    // Close the modal
+    const modalElement = document.getElementById('add-item-modal');
+    const modalInstance = bootstrap.Modal.getInstance(modalElement);
+    modalInstance.hide();
+  }).catch(error => {
+    // Handle error - modal will stay open and browser will show validation errors
+    console.error("Failed to add item:", error);
+  });
 }
 
 // detect when export-products-input is clicked and export the products table
