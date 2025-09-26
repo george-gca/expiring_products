@@ -366,7 +366,7 @@ function discardItem(id, quantity, items, table) {
   });
 }
 
-function addItemFromForm(e) {
+async function addItemFromForm(e) {
   // prevent default - we don't want the form to submit in the conventional way
   e.preventDefault();
 
@@ -428,7 +428,7 @@ function addItemFromForm(e) {
     duration: duration,
     date_opened: null,
     opened: false
-  }, table).then(() => {
+  }, table).then(async () => {
     // Item added successfully, clear form and close modal
     addHistoryData(nameInput.value, durationInput.value, recurring, history_table);
 
@@ -452,7 +452,7 @@ function addItemFromForm(e) {
 
       // Refresh the display to immediately reflect the hidden item
       if (typeof updateDisplay === 'function') {
-        updateDisplay();
+        await updateDisplay();
       }
     }
 
