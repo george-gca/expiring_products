@@ -61,27 +61,20 @@ function checkExpiryDateInList(item, idx) {
 }
 
 function checkExpiryDates() {
-  // check for expired items in sortedFoodItems and sortedMedicineItems
-  sortedFoodItems.some(
-    // 1st Argument to forEach: callback
-    checkExpiryDateInList,
-    // 2nd Argument to forEach: thisArg
-    { listId: `${FOODS_TABLE}-list` }
-  );
-
-  sortedUtilityItems.some(
-    // 1st Argument to forEach: callback
-    checkExpiryDateInList,
-    // 2nd Argument to forEach: thisArg
-    { listId: `${UTILITIES_TABLE}-list` }
-  );
-
-  sortedMedicineItems.some(
-    // 1st Argument to forEach: callback
-    checkExpiryDateInList,
-    // 2nd Argument to forEach: thisArg
-    { listId: `${MEDICINES_TABLE}-list` }
-  );
+  // check for expired items in all categories
+  if (window.userCategories && window.sortedItemsByCategory) {
+    window.userCategories.forEach(category => {
+      const sortedItems = window.sortedItemsByCategory[category.key];
+      if (sortedItems && sortedItems.length > 0) {
+        sortedItems.some(
+          // 1st Argument to some: callback
+          checkExpiryDateInList,
+          // 2nd Argument to some: thisArg
+          { listId: `${category.key}-list` }
+        );
+      }
+    });
+  }
 }
 
 everyDay(checkExpiryDates);

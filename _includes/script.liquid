@@ -4,75 +4,43 @@
   var DateTime = luxon.DateTime;
   var Interval = luxon.Interval;
 
-  const FOODS_TABLE = "foods";
-  const foodsListElement = document.getElementById(`${FOODS_TABLE}-list`);
-  const FOODS_HISTORY_TABLE = `${FOODS_TABLE}_history`;
-  let foodItems = {};
-  let sortedFoodItems = [];
-  let foodsFuse;
-
-  const UTILITIES_TABLE = "utilities";
-  const utilitiesListElement = document.getElementById(`${UTILITIES_TABLE}-list`);
-  const UTILITIES_HISTORY_TABLE = `${UTILITIES_TABLE}_history`;
-  let utilityItems = {};
-  let sortedUtilityItems = [];
-  let utilitiesFuse;
-
-  const MEDICINES_TABLE = "medicines";
-  const medicinesListElement = document.getElementById(`${MEDICINES_TABLE}-list`);
-  const MEDICINES_HISTORY_TABLE = `${MEDICINES_TABLE}_history`;
-  let medicineItems = {};
-  let sortedMedicineItems = [];
-  let medicinesFuse;
+  // Global variables for dynamic categories
+  window.userCategories = [];
+  window.itemsByCategory = {};
+  window.sortedItemsByCategory = {};
+  window.fuseByCategory = {};
+  window.categoryListeners = {};
 
   // Function to fetch all recurring items from history tables
   async function getAllRecurringItems() {
-    if (!currentUser) return { foods: [], utilities: [], medicines: [] };
+    if (!currentUser) return {};
 
-    const recurringItems = { foods: [], utilities: [], medicines: [] };
+    const recurringItems = {};
 
     try {
-      // Fetch from each history table
-      const [foodsSnapshot, utilitiesSnapshot, medicinesSnapshot] = await Promise.all([
-        db.collection('households').doc(currentUser.uid).collection(FOODS_HISTORY_TABLE).where('recurring', '==', true).get(),
-        db.collection('households').doc(currentUser.uid).collection(UTILITIES_HISTORY_TABLE).where('recurring', '==', true).get(),
-        db.collection('households').doc(currentUser.uid).collection(MEDICINES_HISTORY_TABLE).where('recurring', '==', true).get()
-      ]);
-
-      // Process foods
-      foodsSnapshot.forEach(doc => {
-        const data = doc.data();
-        recurringItems.foods.push({
-          id: `history_${doc.id}`, // Unique ID for history items
-          name: data.name,
-          duration: data.duration,
-          recurring: true,
-          quantity: 0 // Default quantity for items not in pantry
-        });
+      // Initialize recurring items object for each category
+      window.userCategories.forEach(category => {
+        recurringItems[category.key] = [];
       });
 
-      // Process utilities
-      utilitiesSnapshot.forEach(doc => {
-        const data = doc.data();
-        recurringItems.utilities.push({
-          id: `history_${doc.id}`,
-          name: data.name,
-          duration: data.duration,
-          recurring: true,
-          quantity: 0
-        });
-      });
+      // Fetch from the unified history table
+      const historySnapshot = await db.collection('users').doc(currentUser.uid).collection('item_history')
+        .where('recurring', '==', true)
+        .get();
 
-      // Process medicines
-      medicinesSnapshot.forEach(doc => {
+      // Process history items
+      historySnapshot.forEach(doc => {
         const data = doc.data();
-        recurringItems.medicines.push({
-          id: `history_${doc.id}`,
-          name: data.name,
-          duration: data.duration,
-          recurring: true,
-          quantity: 0
-        });
+        const category = data.category;
+        if (recurringItems[category]) {
+          recurringItems[category].push({
+            id: `history_${doc.id}`, // Unique ID for history items
+            name: data.name,
+            duration: data.duration,
+            recurring: true,
+            quantity: 0 // Default quantity for items not in pantry
+          });
+        }
       });
 
     } catch (error) {
@@ -165,7 +133,7 @@
       });
   });
 
-  auth.onAuthStateChanged(user => {
+  auth.onAuthStateChanged(async user => {
     const shoppingModeSwitch = document.getElementById('shopping-mode-switch');
 
     if (user) {
@@ -185,39 +153,11 @@
         await updateDisplay(); // Re-render everything when mode changes
       });
 
-      // Call the new real-time listeners instead of displayData
-      setupRealtimeListener(foodsListElement, sortedFoodItems, FOODS_TABLE);
-      setupRealtimeListener(utilitiesListElement, sortedUtilityItems, UTILITIES_TABLE);
-      setupRealtimeListener(medicinesListElement, sortedMedicineItems, MEDICINES_TABLE);
+      // Start data migration if needed
+      await migrateExistingData();
 
-      const foodsSearchInput = document.getElementById(`${FOODS_TABLE}-search-input`);
-      const utilitiesSearchInput = document.getElementById(`${UTILITIES_TABLE}-search-input`);
-      const medicinesSearchInput = document.getElementById(`${MEDICINES_TABLE}-search-input`);
-
-      const handleSearch = (searchTerm, fuseInstance, listElement) => {
-        const allItems = listElement.querySelectorAll('li[data-item-id]');
-
-        if (!searchTerm) {
-          allItems.forEach(li => li.style.display = ''); // Show all
-          return;
-        }
-
-        const results = fuseInstance.search(searchTerm);
-        const matchingIds = new Set(results.map(result => result.item.id));
-
-        allItems.forEach(li => {
-          const itemId = li.getAttribute('data-item-id');
-          if (matchingIds.has(itemId)) {
-            li.style.display = ''; // Show match
-          } else {
-            li.style.display = 'none'; // Hide non-match
-          }
-        });
-      };
-
-      foodsSearchInput.addEventListener('input', (e) => handleSearch(e.target.value, foodsFuse, foodsListElement));
-      utilitiesSearchInput.addEventListener('input', (e) => handleSearch(e.target.value, utilitiesFuse, utilitiesListElement));
-      medicinesSearchInput.addEventListener('input', (e) => handleSearch(e.target.value, medicinesFuse, medicinesListElement));
+      // Setup dynamic categories system
+      setupCategoriesListener();
 
     } else {
       // User is signed out. Show the login form.
@@ -225,7 +165,16 @@
       loginContainer.style.display = 'block';
       mainContent.style.display = 'none';
       tabContents.style.display = 'none';
-      // logoutBtn.style.display = 'none';
+
+      // Clean up category listeners
+      if (window.categoryListeners) {
+        Object.values(window.categoryListeners).forEach(unsubscribe => {
+          if (typeof unsubscribe === 'function') {
+            unsubscribe();
+          }
+        });
+        window.categoryListeners = {};
+      }
     }
 
     // Reveal the content after the logic is complete
@@ -241,13 +190,16 @@
     }
 
     // Get all recurring items from history if in shopping mode
-    let allRecurringItems = { foods: [], utilities: [], medicines: [] };
+    let allRecurringItems = {};
     if (isShoppingMode) {
       allRecurringItems = await getAllRecurringItems();
     }
 
-    // Function to render a single list (foods or medicines)
-    const renderList = (fullList, listElement, categoryRecurringItems = []) => {
+    // Function to render a single category list
+    const renderList = (categoryKey, fullList, categoryRecurringItems = []) => {
+      const listElement = document.getElementById(`${categoryKey}-list`);
+      if (!listElement) return;
+
       while (listElement.firstChild) {
         listElement.removeChild(listElement.firstChild);
       }
@@ -272,6 +224,7 @@
             aggregatedItems[item.name].quantity += parseInt(item.quantity || 0);
           } else {
             aggregatedItems[item.name] = {
+              id: item.id || `shopping_${categoryKey}_${item.name}`,
               name: item.name,
               quantity: parseInt(item.quantity || 0),
               // Keep the first item's other properties for reference
@@ -291,7 +244,7 @@
       if (itemsToRender.length === 0) {
         const li = document.createElement("li");
         li.classList.add("list-group-item");
-        li.textContent = isShoppingMode ? "Shopping list is empty." : "{{ page.no_items }}";
+        li.textContent = isShoppingMode ? "{{ page.shopping_list_empty }}" : "{{ page.no_items }}";
         listElement.appendChild(li);
         return;
       }
@@ -337,7 +290,7 @@
         } else {
           // --- NORMAL MODE ITEM TEMPLATE ---
           li.innerHTML = `
-            <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-bs-toggle="modal" data-bs-target="#edit-item-modal" data-bs-id="${item.id}">
+            <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-bs-toggle="modal" data-bs-target="#edit-item-modal" data-bs-id="${item.id}" data-category="${categoryKey}">
               <div class="d-flex align-items-center">
                 <div class="ms-2 me-auto"><div class="fw-bold">${item.name}</div>${DateTime.fromISO(item.expiring_date).setLocale('{{ site.active_lang }}').toRelative()}</div>
               </div>
@@ -352,10 +305,155 @@
       }
     };
 
-    // Render both lists
-    renderList(sortedFoodItems, foodsListElement, allRecurringItems.foods);
-    renderList(sortedUtilityItems, utilitiesListElement, allRecurringItems.utilities);
-    renderList(sortedMedicineItems, medicinesListElement, allRecurringItems.medicines);
+    // Render all category lists
+    window.userCategories.forEach(category => {
+      const categoryItems = window.sortedItemsByCategory[category.key] || [];
+      const recurringItems = allRecurringItems[category.key] || [];
+      renderList(category.key, categoryItems, recurringItems);
+    });
+  }
+
+  // Functions to handle dynamic category system
+  function updateCategoryTabs() {
+    const tabsContainer = document.querySelector('#tabs ul.nav-tabs');
+    const tabContentsContainer = document.getElementById('tabsContents');
+
+    if (!tabsContainer || !tabContentsContainer) return;
+
+    // Remember which tab was active before rebuilding
+    const currentActiveTab = document.querySelector('.nav-link.active');
+    const activeTabId = currentActiveTab ? currentActiveTab.id : null;
+
+    // Store references to options tab and content before clearing
+    const optionsTab = tabsContainer.querySelector('#options-tab')?.parentElement;
+    const optionsTabContent = tabContentsContainer.querySelector('#options-tab-pane');
+
+    // Clear all tabs and contents
+    tabsContainer.innerHTML = '';
+    tabContentsContainer.innerHTML = '';
+
+    // Create tabs for each category
+    window.userCategories.forEach((category, index) => {
+      // Create tab
+      const li = document.createElement('li');
+      li.className = 'nav-item';
+      li.setAttribute('role', 'presentation');
+
+      const isActive = activeTabId === `${category.key}-tab` || (index === 0 && !activeTabId);
+
+      const button = document.createElement('button');
+      button.className = `nav-link ${isActive ? 'active' : ''}`;
+      button.id = `${category.key}-tab`;
+      button.setAttribute('data-bs-toggle', 'tab');
+      button.setAttribute('data-bs-target', `#${category.key}-tab-pane`);
+      button.setAttribute('data-category', category.key);
+      button.setAttribute('type', 'button');
+      button.setAttribute('role', 'tab');
+      button.setAttribute('aria-controls', `${category.key}-tab-pane`);
+      button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      button.textContent = category.name;
+
+      li.appendChild(button);
+      tabsContainer.appendChild(li);
+
+      // Create tab content
+      const tabPane = document.createElement('div');
+      tabPane.className = `tab-pane fade ${isActive ? 'show active' : ''}`;
+      tabPane.id = `${category.key}-tab-pane`;
+      tabPane.setAttribute('role', 'tabpanel');
+      tabPane.setAttribute('aria-labelledby', `${category.key}-tab`);
+      tabPane.setAttribute('tabindex', index.toString());
+
+      tabPane.innerHTML = `
+        <div class="input-group my-3" id="${category.key}-search-container">
+          <input type="search" class="form-control" id="${category.key}-search-input" placeholder="{{ page.search }} ${category.name.toLowerCase()}..." aria-label="{{ page.search }} ${category.name.toLowerCase()}">
+        </div>
+        <ul class="list-group list-group-flush list-unstyled mt-3" id="${category.key}-list"></ul>
+        <!-- Floating add item button -->
+        <div class="fixed-action-btn" style="height: 80px;">
+          <button class="btn btn-floating text-white btn-lg" aria-label="{{ page.add_item }}" style="background-color: #f44336;" data-bs-toggle="modal" data-bs-target="#add-item-modal">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+        </div>
+      `;
+
+      tabContentsContainer.appendChild(tabPane);
+    });
+
+    // Add options tab at the end
+    if (optionsTab) {
+      // Ensure options tab is not active unless it was specifically active before
+      const optionsButton = optionsTab.querySelector('#options-tab');
+      if (optionsButton) {
+        const optionsIsActive = activeTabId === 'options-tab';
+        optionsButton.className = `nav-link ${optionsIsActive ? 'active' : ''}`;
+        optionsButton.setAttribute('aria-selected', optionsIsActive ? 'true' : 'false');
+      }
+      tabsContainer.appendChild(optionsTab);
+    }
+
+    // Add options tab content at the end
+    if (optionsTabContent) {
+      // Ensure options content matches the tab state
+      const optionsIsActive = activeTabId === 'options-tab';
+      optionsTabContent.className = `tab-pane fade ${optionsIsActive ? 'show active' : ''}`;
+      tabContentsContainer.appendChild(optionsTabContent);
+    }
+
+    // Update categories management list and dropdown
+    updateCategoriesList();
+    updateCategoryDropdown();
+  }
+
+  function setupCategoryListeners() {
+    // Clean up existing listeners
+    Object.values(window.categoryListeners).forEach(unsubscribe => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    });
+    window.categoryListeners = {};
+
+    // Setup listeners for each category
+    window.userCategories.forEach(category => {
+      const unsubscribe = setupRealtimeListener(category.key);
+      window.categoryListeners[category.key] = unsubscribe;
+
+      // Setup search for this category
+      const searchInput = document.getElementById(`${category.key}-search-input`);
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          handleCategorySearch(e.target.value, category.key);
+        });
+      }
+    });
+  }
+
+  function handleCategorySearch(searchTerm, categoryKey) {
+    const listElement = document.getElementById(`${categoryKey}-list`);
+    if (!listElement) return;
+
+    const allItems = listElement.querySelectorAll('li[data-item-id]');
+
+    if (!searchTerm) {
+      allItems.forEach(li => li.style.display = ''); // Show all
+      return;
+    }
+
+    const fuseInstance = window.fuseByCategory[categoryKey];
+    if (!fuseInstance) return;
+
+    const results = fuseInstance.search(searchTerm);
+    const matchingIds = new Set(results.map(result => result.item.id));
+
+    allItems.forEach(li => {
+      const itemId = li.getAttribute('data-item-id');
+      if (matchingIds.has(itemId)) {
+        li.style.display = ''; // Show match
+      } else {
+        li.style.display = 'none'; // Hide non-match
+      }
+    });
   }
 
   {% include scripts/ui.js.liquid %}
