@@ -17,10 +17,13 @@ function addHistoryData(name, duration, recurring, table) {
 }
 
 function addData(newItem, table) {
-  if (!currentUser) return;
-  db.collection('households').doc(currentUser.uid).collection(table).add(newItem)
-  .then(docRef => {/* Document written */})
-    .catch(error => console.error("Error adding document: ", error));
+  if (!currentUser) return Promise.reject("User not authenticated");
+  return db.collection('households').doc(currentUser.uid).collection(table).add(newItem)
+    .then(docRef => {/* Document written */})
+    .catch(error => {
+      console.error("Error adding document: ", error);
+      throw error;
+    });
 }
 
 function setupRealtimeListener(listElement, sortedItems, table) {
