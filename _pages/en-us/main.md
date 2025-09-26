@@ -17,12 +17,10 @@ edit: Edit
 edit_category: Edit category
 expire_in: Expire in
 export_data: Export data
-foods: Foods
 import_data: Import data
 item_name: Name
 logout: Logout
 manage_categories: Manage Categories
-medicines: Medicines
 no_items: No items here.
 no_items_to_export: No items to export.
 opened_items: Opened items
@@ -35,6 +33,5 @@ shopping_list_empty: Your shopping list is empty.
 shopping_mode: Shopping mode
 site_description: A simple system to control products to expire
 title: Products to expire
-utilities: Utilities
 view_on_github: View project on GitHub
 ---
