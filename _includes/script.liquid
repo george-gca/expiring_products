@@ -193,7 +193,7 @@
     // Get all recurring items from history if in shopping mode
     let allRecurringItems = {};
     if (isShoppingMode) {
-      allRecurringItems = await getAllRecurringItems();
+      allRecurringItems = await getRecurringItemsForShopping();
     }
 
     // Function to render a single category list
