@@ -21,9 +21,13 @@
 
   <div class="border-bottom" id="tabs">
     <div class="d-flex justify-content-between align-items-center mb-2">
-      <div class="form-check form-switch">
-        <input class="form-check-input" type="checkbox" role="switch" id="shopping-mode-switch">
-        <label class="form-check-label" for="shopping-mode-switch">{{ page.shopping_mode }}</label>
+      <div></div>
+      <div class="shopping-mode-container">
+        <span class="shopping-mode-emoji">🛒</span>
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" role="switch" id="shopping-mode-switch">
+          <label class="form-check-label shopping-mode-text" for="shopping-mode-switch">{{ page.shopping_mode }}</label>
+        </div>
       </div>
     </div>
     <ul class="nav nav-tabs" role="tablist">
