@@ -600,17 +600,23 @@
     const shoppingModeSwitch = document.getElementById('shopping-mode-switch');
     if (shoppingModeSwitch) {
       shoppingModeSwitch.addEventListener('change', function() {
-        toggleFiltersVisibility(this.checked);
+        toggleSortingFilteringVisibility(this.checked);
       });
     }
   });
 
   // Function to toggle filter visibility based on shopping mode
-  function toggleFiltersVisibility(isShoppingMode) {
+  function toggleSortingFilteringVisibility(isShoppingMode) {
     window.userCategories.forEach(category => {
       const filterContainer = document.getElementById(`${category.key}-filter-container`);
       if (filterContainer) {
         filterContainer.style.display = isShoppingMode ? 'none' : 'flex';
+      }
+    });
+    window.userCategories.forEach(category => {
+      const sortDropdown = document.getElementById(`${category.key}-sort-dropdown`);
+      if (sortDropdown) {
+        sortDropdown.style.display = isShoppingMode ? 'none' : 'block';
       }
     });
   }
