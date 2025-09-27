@@ -240,6 +240,7 @@
       } else {
         // Normal mode: apply sorting and filtering preferences
         const sortBy = window.sortingPreferences[categoryKey] || 'date';
+        const sortDirection = window.sortingDirections[categoryKey] || 'asc';
         const filterBy = window.filteringPreferences[categoryKey] || 'all';
 
         // Apply custom sorting
@@ -248,7 +249,7 @@
         fullList.forEach(item => {
           itemsObj[item.id] = item;
         });
-        sortItemsBy(itemsObj, sortedItems, sortBy);
+        sortItemsBy(itemsObj, sortedItems, sortBy, sortDirection);
 
         // Apply filtering
         itemsToRender = filterItems(sortedItems, filterBy);
@@ -332,6 +333,9 @@
       const recurringItems = allRecurringItems[category.key] || [];
       renderList(category.key, categoryItems, recurringItems);
     });
+
+    // Toggle filter visibility based on shopping mode
+    toggleFiltersVisibility(isShoppingMode);
   }
 
   // Function to generate tab content using template-like approach
@@ -351,20 +355,34 @@
             <i class="fa-solid fa-sort"></i> {{ page.sort_by }}
           </button>
           <ul class="dropdown-menu" aria-labelledby="${categoryKey}-sort-dropdown">
-            <li><a class="dropdown-item sort-option" href="#" data-sort="date" data-category="${categoryKey}">
-              <i class="fa-solid fa-calendar"></i> {{ page.sort_by_date }}
+            <li><h6 class="dropdown-header">{{ page.sort_by_date }}</h6></li>
+            <li><a class="dropdown-item sort-option" href="#" data-sort="date" data-direction="asc" data-category="${categoryKey}">
+              <i class="fa-solid fa-calendar"></i> {{ page.sort_by_date }} <i class="fa-solid fa-arrow-up"></i>
             </a></li>
-            <li><a class="dropdown-item sort-option" href="#" data-sort="name" data-category="${categoryKey}">
-              <i class="fa-solid fa-font"></i> {{ page.sort_by_name }}
+            <li><a class="dropdown-item sort-option" href="#" data-sort="date" data-direction="desc" data-category="${categoryKey}">
+              <i class="fa-solid fa-calendar"></i> {{ page.sort_by_date }} <i class="fa-solid fa-arrow-down"></i>
             </a></li>
-            <li><a class="dropdown-item sort-option" href="#" data-sort="quantity" data-category="${categoryKey}">
-              <i class="fa-solid fa-hashtag"></i> {{ page.sort_by_quantity }}
+            <li><hr class="dropdown-divider"></li>
+            <li><h6 class="dropdown-header">{{ page.sort_by_name }}</h6></li>
+            <li><a class="dropdown-item sort-option" href="#" data-sort="name" data-direction="asc" data-category="${categoryKey}">
+              <i class="fa-solid fa-font"></i> {{ page.sort_by_name }} <i class="fa-solid fa-arrow-up"></i>
+            </a></li>
+            <li><a class="dropdown-item sort-option" href="#" data-sort="name" data-direction="desc" data-category="${categoryKey}">
+              <i class="fa-solid fa-font"></i> {{ page.sort_by_name }} <i class="fa-solid fa-arrow-down"></i>
+            </a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><h6 class="dropdown-header">{{ page.sort_by_quantity }}</h6></li>
+            <li><a class="dropdown-item sort-option" href="#" data-sort="quantity" data-direction="asc" data-category="${categoryKey}">
+              <i class="fa-solid fa-hashtag"></i> {{ page.sort_by_quantity }} <i class="fa-solid fa-arrow-up"></i>
+            </a></li>
+            <li><a class="dropdown-item sort-option" href="#" data-sort="quantity" data-direction="desc" data-category="${categoryKey}">
+              <i class="fa-solid fa-hashtag"></i> {{ page.sort_by_quantity }} <i class="fa-solid fa-arrow-down"></i>
             </a></li>
           </ul>
         </div>
 
-        <!-- Filter Buttons -->
-        <div class="btn-group filter-buttons" role="group" aria-label="Filter options">
+        <!-- Filter Buttons (hidden in shopping mode) -->
+        <div class="btn-group filter-buttons" role="group" aria-label="Filter options" id="${categoryKey}-filter-container">
           <input type="radio" class="btn-check filter-option" name="${categoryKey}-filter" id="${categoryKey}-filter-all" data-filter="all" data-category="${categoryKey}" checked>
           <label class="btn btn-outline-primary btn-sm" for="${categoryKey}-filter-all">{{ page.all_items }}</label>
 
@@ -543,10 +561,12 @@
         e.preventDefault();
         const sortOption = e.target.classList.contains('sort-option') ? e.target : e.target.closest('.sort-option');
         const sortBy = sortOption.getAttribute('data-sort');
+        const direction = sortOption.getAttribute('data-direction');
         const categoryKey = sortOption.getAttribute('data-category');
 
-        // Store preference
+        // Store preferences
         window.sortingPreferences[categoryKey] = sortBy;
+        window.sortingDirections[categoryKey] = direction;
 
         // Update button text to show current selection
         const dropdown = document.getElementById(`${categoryKey}-sort-dropdown`);
@@ -554,7 +574,8 @@
                     sortBy === 'name' ? 'fa-font' : 'fa-hashtag';
         const text = sortBy === 'date' ? '{{ page.sort_by_date }}' :
                     sortBy === 'name' ? '{{ page.sort_by_name }}' : '{{ page.sort_by_quantity }}';
-        dropdown.innerHTML = `<i class="fa-solid ${icon}"></i> ${text}`;
+        const directionIcon = direction === 'asc' ? 'fa-arrow-up' : 'fa-arrow-down';
+        dropdown.innerHTML = `<i class="fa-solid ${icon}"></i> ${text} <i class="fa-solid ${directionIcon}"></i>`;
 
         // Refresh display
         updateDisplay();
@@ -574,7 +595,25 @@
         updateDisplay();
       }
     });
+
+    // Handle shopping mode toggle to show/hide filters
+    const shoppingModeSwitch = document.getElementById('shopping-mode-switch');
+    if (shoppingModeSwitch) {
+      shoppingModeSwitch.addEventListener('change', function() {
+        toggleFiltersVisibility(this.checked);
+      });
+    }
   });
+
+  // Function to toggle filter visibility based on shopping mode
+  function toggleFiltersVisibility(isShoppingMode) {
+    window.userCategories.forEach(category => {
+      const filterContainer = document.getElementById(`${category.key}-filter-container`);
+      if (filterContainer) {
+        filterContainer.style.display = isShoppingMode ? 'none' : 'flex';
+      }
+    });
+  }
 
   {% include scripts/ui.js.liquid %}
   {% include scripts/utils.js.liquid %}
