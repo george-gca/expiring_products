@@ -238,8 +238,20 @@
         // Convert back to array and sort by quantity
         itemsToRender = Object.values(aggregatedItems).sort((a, b) => a.quantity - b.quantity);
       } else {
-        // Normal mode: show all items sorted by date
-        itemsToRender = fullList; // Already sorted by date from the listener
+        // Normal mode: apply sorting and filtering preferences
+        const sortBy = window.sortingPreferences[categoryKey] || 'date';
+        const filterBy = window.filteringPreferences[categoryKey] || 'all';
+
+        // Apply custom sorting
+        let sortedItems = [];
+        const itemsObj = {};
+        fullList.forEach(item => {
+          itemsObj[item.id] = item;
+        });
+        sortItemsBy(itemsObj, sortedItems, sortBy);
+
+        // Apply filtering
+        itemsToRender = filterItems(sortedItems, filterBy);
       }
 
       if (itemsToRender.length === 0) {
@@ -389,6 +401,40 @@
         <div class="input-group my-3" id="${category.key}-search-container">
           <input type="search" class="form-control" id="${category.key}-search-input" placeholder="{{ page.search }} ${category.name.toLowerCase()}..." aria-label="{{ page.search }} ${category.name.toLowerCase()}">
         </div>
+        
+        <!-- Sorting and Filtering Controls -->
+        <div class="d-flex flex-wrap gap-2 mb-3 sorting-filtering-controls">
+          <!-- Sorting Dropdown -->
+          <div class="dropdown">
+            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="${category.key}-sort-dropdown" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="fa-solid fa-sort"></i> {{ page.sort_by }}
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="${category.key}-sort-dropdown">
+              <li><a class="dropdown-item sort-option" href="#" data-sort="date" data-category="${category.key}">
+                <i class="fa-solid fa-calendar"></i> {{ page.sort_by_date }}
+              </a></li>
+              <li><a class="dropdown-item sort-option" href="#" data-sort="name" data-category="${category.key}">
+                <i class="fa-solid fa-font"></i> {{ page.sort_by_name }}
+              </a></li>
+              <li><a class="dropdown-item sort-option" href="#" data-sort="quantity" data-category="${category.key}">
+                <i class="fa-solid fa-hashtag"></i> {{ page.sort_by_quantity }}
+              </a></li>
+            </ul>
+          </div>
+          
+          <!-- Filter Buttons -->
+          <div class="btn-group filter-buttons" role="group" aria-label="Filter options">
+            <input type="radio" class="btn-check filter-option" name="${category.key}-filter" id="${category.key}-filter-all" data-filter="all" data-category="${category.key}" checked>
+            <label class="btn btn-outline-primary btn-sm" for="${category.key}-filter-all">{{ page.all_items }}</label>
+            
+            <input type="radio" class="btn-check filter-option" name="${category.key}-filter" id="${category.key}-filter-opened" data-filter="opened" data-category="${category.key}">
+            <label class="btn btn-outline-primary btn-sm" for="${category.key}-filter-opened">{{ page.opened_items }}</label>
+            
+            <input type="radio" class="btn-check filter-option" name="${category.key}-filter" id="${category.key}-filter-unopened" data-filter="unopened" data-category="${category.key}">
+            <label class="btn btn-outline-primary btn-sm" for="${category.key}-filter-unopened">{{ page.unopened_items }}</label>
+          </div>
+        </div>
+        
         <ul class="list-group list-group-flush list-unstyled mt-3" id="${category.key}-list"></ul>
         <!-- Floating add item button -->
         <div class="fixed-action-btn" style="height: 80px;">
@@ -424,6 +470,9 @@
     // Update categories management list and dropdown
     updateCategoriesList();
     updateCategoryDropdown();
+    
+    // Debug: Log that tabs have been updated
+    console.log('Category tabs updated. Categories:', window.userCategories.length);
   }
 
   function setupCategoryListeners() {
@@ -476,6 +525,47 @@
       }
     });
   }
+
+  // Event handlers for sorting and filtering controls
+  document.addEventListener('DOMContentLoaded', function() {
+    // Sort option click handlers
+    document.addEventListener('click', function(e) {
+      if (e.target.classList.contains('sort-option') || e.target.closest('.sort-option')) {
+        e.preventDefault();
+        const sortOption = e.target.classList.contains('sort-option') ? e.target : e.target.closest('.sort-option');
+        const sortBy = sortOption.getAttribute('data-sort');
+        const categoryKey = sortOption.getAttribute('data-category');
+
+        // Store preference
+        window.sortingPreferences[categoryKey] = sortBy;
+
+        // Update button text to show current selection
+        const dropdown = document.getElementById(`${categoryKey}-sort-dropdown`);
+        const icon = sortBy === 'date' ? 'fa-calendar' :
+                    sortBy === 'name' ? 'fa-font' : 'fa-hashtag';
+        const text = sortBy === 'date' ? '{{ page.sort_by_date }}' :
+                    sortBy === 'name' ? '{{ page.sort_by_name }}' : '{{ page.sort_by_quantity }}';
+        dropdown.innerHTML = `<i class="fa-solid ${icon}"></i> ${text}`;
+
+        // Refresh display
+        updateDisplay();
+      }
+    });
+
+    // Filter option change handlers
+    document.addEventListener('change', function(e) {
+      if (e.target.classList.contains('filter-option')) {
+        const filterBy = e.target.getAttribute('data-filter');
+        const categoryKey = e.target.getAttribute('data-category');
+
+        // Store preference
+        window.filteringPreferences[categoryKey] = filterBy;
+
+        // Refresh display
+        updateDisplay();
+      }
+    });
+  });
 
   {% include scripts/ui.js.liquid %}
   {% include scripts/utils.js.liquid %}

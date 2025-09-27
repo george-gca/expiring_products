@@ -5,6 +5,7 @@ permalink: /
 
 add_category: Adicionar Categoria
 add_item: Adicionar item
+all_items: Todos os Itens
 category: Categoria
 category_name: Nome da categoria
 category_emoji: Emoji
@@ -33,6 +34,11 @@ search: Buscar
 shopping_list_empty: Sua lista de compras está vazia.
 shopping_mode: Modo de compras
 site_description: Um sistema simples de controle de produtos a vencer
+sort_by: Ordenar por
+sort_by_date: Data de Vencimento
+sort_by_name: Nome
+sort_by_quantity: Quantidade
 title: Produtos a vencer
+unopened_items: Itens fechados
 view_on_github: Visualizar projeto no GitHub
 ---
