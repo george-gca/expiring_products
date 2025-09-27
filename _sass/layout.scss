@@ -113,6 +113,55 @@ body.is-loading #tabsContents {
   }
 }
 
+/* Settings actions layout for desktop */
+.settings-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.settings-actions .d-flex {
+  align-items: stretch;
+}
+
+.settings-actions .btn,
+.settings-actions label.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+/* Shopping mode switch positioning */
+.shopping-mode-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.shopping-mode-container .form-check {
+  margin-bottom: 0;
+}
+
+.shopping-mode-emoji {
+  font-size: 1.2rem;
+}
+
+.shopping-mode-text {
+  display: inline;
+}
+
+/* Mobile responsive shopping mode */
+@media (max-width: 768px) {
+  .shopping-mode-text {
+    display: none;
+  }
+  
+  .shopping-mode-container {
+    gap: 0.25rem;
+  }
+}
+
 /* Emoji picker styles */
 .emoji-picker-container {
   padding: 0.5rem;
