@@ -16,19 +16,22 @@ function sortItems(items, sortedItems) {
 }
 
 /**
- * Enhanced sort items function with configurable sort criteria
+ * Enhanced sort items function with configurable sort criteria and direction
  * @param {Object} items - Object containing items to sort
  * @param {Array} sortedItems - Array to populate with sorted items
  * @param {string} sortBy - Sort criteria: 'date', 'name', or 'quantity'
+ * @param {string} direction - Sort direction: 'asc' or 'desc'
  */
-function sortItemsBy(items, sortedItems, sortBy = 'date') {
+function sortItemsBy(items, sortedItems, sortBy = 'date', direction = 'asc') {
   sortedItems.length = 0;
   sortedItems.push(...Object.values(items));
+
+  const multiplier = direction === 'desc' ? -1 : 1;
 
   switch (sortBy) {
     case 'name':
       sortedItems.sort((a, b) => {
-        const nameComparison = a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+        const nameComparison = a.name.toLowerCase().localeCompare(b.name.toLowerCase()) * multiplier;
         return nameComparison !== 0 ? nameComparison :
                (a.expiring_date - b.expiring_date || b.opened - a.opened);
       });
@@ -36,7 +39,7 @@ function sortItemsBy(items, sortedItems, sortBy = 'date') {
 
     case 'quantity':
       sortedItems.sort((a, b) => {
-        const quantityComparison = b.quantity - a.quantity;
+        const quantityComparison = (b.quantity - a.quantity) * multiplier;
         return quantityComparison !== 0 ? quantityComparison :
                (a.expiring_date - b.expiring_date || b.opened - a.opened);
       });
@@ -44,12 +47,12 @@ function sortItemsBy(items, sortedItems, sortBy = 'date') {
 
     case 'date':
     default:
-      // Default sorting: expiration date first, then opened status, then quantity
-      sortedItems.sort((a, b) =>
-        a.expiring_date - b.expiring_date ||
-        b.opened - a.opened ||
-        b.quantity - a.quantity
-      );
+      // For date sorting, consider the multiplier
+      sortedItems.sort((a, b) => {
+        const dateComparison = (a.expiring_date - b.expiring_date) * multiplier;
+        return dateComparison !== 0 ? dateComparison :
+               (b.opened - a.opened || b.quantity - a.quantity);
+      });
       break;
   }
 }
@@ -76,6 +79,7 @@ function filterItems(items, filterBy = 'all') {
  * Global storage for current sorting and filtering preferences per category
  */
 window.sortingPreferences = window.sortingPreferences || {};
+window.sortingDirections = window.sortingDirections || {};
 window.filteringPreferences = window.filteringPreferences || {};
 
 // Register service worker for offline functionality
