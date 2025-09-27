@@ -1,5 +1,5 @@
 /**
- * Sort items by expiration date, opened status, and quantity
+ * Sort items by expiration date, opened status, and quantity (legacy function)
  * @param {Object} items - Object containing items to sort
  * @param {Array} sortedItems - Array to populate with sorted items
  */
@@ -14,6 +14,69 @@ function sortItems(items, sortedItems) {
     b.quantity - a.quantity
   );
 }
+
+/**
+ * Enhanced sort items function with configurable sort criteria
+ * @param {Object} items - Object containing items to sort
+ * @param {Array} sortedItems - Array to populate with sorted items
+ * @param {string} sortBy - Sort criteria: 'date', 'name', or 'quantity'
+ */
+function sortItemsBy(items, sortedItems, sortBy = 'date') {
+  sortedItems.length = 0;
+  sortedItems.push(...Object.values(items));
+
+  switch (sortBy) {
+    case 'name':
+      sortedItems.sort((a, b) => {
+        const nameComparison = a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+        return nameComparison !== 0 ? nameComparison :
+               (a.expiring_date - b.expiring_date || b.opened - a.opened);
+      });
+      break;
+
+    case 'quantity':
+      sortedItems.sort((a, b) => {
+        const quantityComparison = b.quantity - a.quantity;
+        return quantityComparison !== 0 ? quantityComparison :
+               (a.expiring_date - b.expiring_date || b.opened - a.opened);
+      });
+      break;
+
+    case 'date':
+    default:
+      // Default sorting: expiration date first, then opened status, then quantity
+      sortedItems.sort((a, b) =>
+        a.expiring_date - b.expiring_date ||
+        b.opened - a.opened ||
+        b.quantity - a.quantity
+      );
+      break;
+  }
+}
+
+/**
+ * Filter items based on opened status
+ * @param {Array} items - Array of items to filter
+ * @param {string} filterBy - Filter criteria: 'all', 'opened', or 'unopened'
+ * @returns {Array} Filtered array of items
+ */
+function filterItems(items, filterBy = 'all') {
+  switch (filterBy) {
+    case 'opened':
+      return items.filter(item => item.opened);
+    case 'unopened':
+      return items.filter(item => !item.opened);
+    case 'all':
+    default:
+      return items;
+  }
+}
+
+/**
+ * Global storage for current sorting and filtering preferences per category
+ */
+window.sortingPreferences = window.sortingPreferences || {};
+window.filteringPreferences = window.filteringPreferences || {};
 
 // Register service worker for offline functionality
 if ('serviceWorker' in navigator) {

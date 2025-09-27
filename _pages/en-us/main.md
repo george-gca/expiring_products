@@ -5,6 +5,7 @@ permalink: /
 
 add_category: Add Category
 add_item: Add item
+all_items: All Items
 category: Category
 category_name: Category name
 category_emoji: Emoji
@@ -33,6 +34,11 @@ search: Search
 shopping_list_empty: Your shopping list is empty.
 shopping_mode: Shopping mode
 site_description: A simple system to control products to expire
+sort_by: Sort by
+sort_by_date: Expiration Date
+sort_by_name: Name
+sort_by_quantity: Quantity
 title: Products to expire
+unopened_items: Unopened items
 view_on_github: View project on GitHub
 ---
