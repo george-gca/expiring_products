@@ -603,28 +603,28 @@ document.addEventListener('DOMContentLoaded', function() {
   const selectedEmojiSpan = document.getElementById('selected-emoji');
 
   // Setup emoji picker functionality
-  const emojiOptions = document.querySelectorAll('.emoji-option');
-  emojiOptions.forEach(option => {
-    option.addEventListener('click', function(e) {
-      e.preventDefault();
-      const selectedEmoji = this.getAttribute('data-emoji');
-      selectedEmojiSpan.textContent = selectedEmoji;
+  // Wait for emoji-picker-element to be defined
+  if (customElements.get('emoji-picker')) {
+    setupEmojiPicker();
+  } else {
+    customElements.whenDefined('emoji-picker').then(setupEmojiPicker);
+  }
 
-      // Close the dropdown
-      const dropdown = bootstrap.Dropdown.getInstance(document.getElementById('emoji-picker-btn'));
-      if (dropdown) {
-        dropdown.hide();
-      }
-    });
+  function setupEmojiPicker() {
+    const emojiPicker = document.querySelector('emoji-picker');
+    if (emojiPicker) {
+      emojiPicker.addEventListener('emoji-click', function(event) {
+        const selectedEmoji = event.detail.unicode;
+        selectedEmojiSpan.textContent = selectedEmoji;
 
-    // Add keyboard support for emoji selection
-    option.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        this.click();
-      }
-    });
-  });
+        // Close the dropdown
+        const dropdown = bootstrap.Dropdown.getInstance(document.getElementById('emoji-picker-btn'));
+        if (dropdown) {
+          dropdown.hide();
+        }
+      });
+    }
+  }
 
   if (addCategoryBtn) {
     addCategoryBtn.addEventListener('click', async function() {
