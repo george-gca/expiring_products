@@ -67,6 +67,10 @@ third_party_libraries:
       css: "https://cdn.jsdelivr.net/npm/bootstrap@{{version}}/dist/css/bootstrap.min.css"
       js: "https://cdn.jsdelivr.net/npm/bootstrap@{{version}}/dist/js/bootstrap.bundle.min.js"
     version: "5.3.3"
+  emoji-picker-element:
+    url:
+      js: "https://cdn.jsdelivr.net/npm/emoji-picker-element@{{version}}/index.js"
+    version: "^1"
   firebase-app:
     url:
       js: "https://www.gstatic.com/firebasejs/{{version}}/firebase-app-compat.js"
