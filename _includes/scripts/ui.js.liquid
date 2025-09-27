@@ -479,7 +479,7 @@ async function addItemFromForm(e) {
   }
 
   addData({
-    name: nameInput.value,
+    name: nameInput.value.trim(),
     category: category,
     quantity: quantityInput.value,
     expiring_date: expiringDate.toISO(),
@@ -489,7 +489,7 @@ async function addItemFromForm(e) {
     opened: false
   }).then(async () => {
     // Item added successfully, clear form and close modal
-    addHistoryData(nameInput.value, durationInput.value, recurring, category);
+    addHistoryData(nameInput.value.trim(), durationInput.value, recurring, category);
 
     nameInput.value = "";
     quantityInput.value = "";
