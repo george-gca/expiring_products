@@ -334,6 +334,59 @@
     });
   }
 
+  // Function to generate tab content using template-like approach
+  function generateTabContent(categoryKey, categoryName, tabIndex) {
+    const isActive = tabIndex === 0 ? ' show active' : '';
+
+    return `
+      <div class="input-group my-3" id="${categoryKey}-search-container">
+        <input type="search" class="form-control" id="${categoryKey}-search-input" placeholder="{{ page.search }} ${categoryName.toLowerCase()}..." aria-label="{{ page.search }} ${categoryName.toLowerCase()}">
+      </div>
+
+      <!-- Sorting and Filtering Controls -->
+      <div class="d-flex flex-wrap gap-2 mb-3 sorting-filtering-controls">
+        <!-- Sorting Dropdown -->
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="${categoryKey}-sort-dropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fa-solid fa-sort"></i> {{ page.sort_by }}
+          </button>
+          <ul class="dropdown-menu" aria-labelledby="${categoryKey}-sort-dropdown">
+            <li><a class="dropdown-item sort-option" href="#" data-sort="date" data-category="${categoryKey}">
+              <i class="fa-solid fa-calendar"></i> {{ page.sort_by_date }}
+            </a></li>
+            <li><a class="dropdown-item sort-option" href="#" data-sort="name" data-category="${categoryKey}">
+              <i class="fa-solid fa-font"></i> {{ page.sort_by_name }}
+            </a></li>
+            <li><a class="dropdown-item sort-option" href="#" data-sort="quantity" data-category="${categoryKey}">
+              <i class="fa-solid fa-hashtag"></i> {{ page.sort_by_quantity }}
+            </a></li>
+          </ul>
+        </div>
+
+        <!-- Filter Buttons -->
+        <div class="btn-group filter-buttons" role="group" aria-label="Filter options">
+          <input type="radio" class="btn-check filter-option" name="${categoryKey}-filter" id="${categoryKey}-filter-all" data-filter="all" data-category="${categoryKey}" checked>
+          <label class="btn btn-outline-primary btn-sm" for="${categoryKey}-filter-all">{{ page.all_items }}</label>
+
+          <input type="radio" class="btn-check filter-option" name="${categoryKey}-filter" id="${categoryKey}-filter-opened" data-filter="opened" data-category="${categoryKey}">
+          <label class="btn btn-outline-primary btn-sm" for="${categoryKey}-filter-opened">{{ page.opened_items }}</label>
+
+          <input type="radio" class="btn-check filter-option" name="${categoryKey}-filter" id="${categoryKey}-filter-unopened" data-filter="unopened" data-category="${categoryKey}">
+          <label class="btn btn-outline-primary btn-sm" for="${categoryKey}-filter-unopened">{{ page.unopened_items }}</label>
+        </div>
+      </div>
+
+      <ul class="list-group list-group-flush list-unstyled mt-3" id="${categoryKey}-list"></ul>
+
+      <!-- Floating add item button -->
+      <div class="fixed-action-btn" style="height: 80px;">
+        <button class="btn btn-floating text-white btn-lg" aria-label="{{ page.add_item }}" style="background-color: #f44336;" data-bs-toggle="modal" data-bs-target="#add-item-modal">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+      </div>
+    `;
+  }
+
   // Functions to handle dynamic category system
   function updateCategoryTabs() {
     const tabsContainer = document.querySelector('#tabs ul.nav-tabs');
@@ -389,7 +442,7 @@
       li.appendChild(button);
       tabsContainer.appendChild(li);
 
-      // Create tab content
+      // Create tab content using template-like function
       const tabPane = document.createElement('div');
       tabPane.className = `tab-pane fade ${isActive ? 'show active' : ''}`;
       tabPane.id = `${category.key}-tab-pane`;
@@ -397,52 +450,8 @@
       tabPane.setAttribute('aria-labelledby', `${category.key}-tab`);
       tabPane.setAttribute('tabindex', index.toString());
 
-      tabPane.innerHTML = `
-        <div class="input-group my-3" id="${category.key}-search-container">
-          <input type="search" class="form-control" id="${category.key}-search-input" placeholder="{{ page.search }} ${category.name.toLowerCase()}..." aria-label="{{ page.search }} ${category.name.toLowerCase()}">
-        </div>
-        
-        <!-- Sorting and Filtering Controls -->
-        <div class="d-flex flex-wrap gap-2 mb-3 sorting-filtering-controls">
-          <!-- Sorting Dropdown -->
-          <div class="dropdown">
-            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="${category.key}-sort-dropdown" data-bs-toggle="dropdown" aria-expanded="false">
-              <i class="fa-solid fa-sort"></i> {{ page.sort_by }}
-            </button>
-            <ul class="dropdown-menu" aria-labelledby="${category.key}-sort-dropdown">
-              <li><a class="dropdown-item sort-option" href="#" data-sort="date" data-category="${category.key}">
-                <i class="fa-solid fa-calendar"></i> {{ page.sort_by_date }}
-              </a></li>
-              <li><a class="dropdown-item sort-option" href="#" data-sort="name" data-category="${category.key}">
-                <i class="fa-solid fa-font"></i> {{ page.sort_by_name }}
-              </a></li>
-              <li><a class="dropdown-item sort-option" href="#" data-sort="quantity" data-category="${category.key}">
-                <i class="fa-solid fa-hashtag"></i> {{ page.sort_by_quantity }}
-              </a></li>
-            </ul>
-          </div>
-          
-          <!-- Filter Buttons -->
-          <div class="btn-group filter-buttons" role="group" aria-label="Filter options">
-            <input type="radio" class="btn-check filter-option" name="${category.key}-filter" id="${category.key}-filter-all" data-filter="all" data-category="${category.key}" checked>
-            <label class="btn btn-outline-primary btn-sm" for="${category.key}-filter-all">{{ page.all_items }}</label>
-            
-            <input type="radio" class="btn-check filter-option" name="${category.key}-filter" id="${category.key}-filter-opened" data-filter="opened" data-category="${category.key}">
-            <label class="btn btn-outline-primary btn-sm" for="${category.key}-filter-opened">{{ page.opened_items }}</label>
-            
-            <input type="radio" class="btn-check filter-option" name="${category.key}-filter" id="${category.key}-filter-unopened" data-filter="unopened" data-category="${category.key}">
-            <label class="btn btn-outline-primary btn-sm" for="${category.key}-filter-unopened">{{ page.unopened_items }}</label>
-          </div>
-        </div>
-        
-        <ul class="list-group list-group-flush list-unstyled mt-3" id="${category.key}-list"></ul>
-        <!-- Floating add item button -->
-        <div class="fixed-action-btn" style="height: 80px;">
-          <button class="btn btn-floating text-white btn-lg" aria-label="{{ page.add_item }}" style="background-color: #f44336;" data-bs-toggle="modal" data-bs-target="#add-item-modal">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-        </div>
-      `;
+      // Use the template function to generate content
+      tabPane.innerHTML = generateTabContent(category.key, category.name, index);
 
       tabContentsContainer.appendChild(tabPane);
     });
@@ -470,7 +479,7 @@
     // Update categories management list and dropdown
     updateCategoriesList();
     updateCategoryDropdown();
-    
+
     // Debug: Log that tabs have been updated
     console.log('Category tabs updated. Categories:', window.userCategories.length);
   }
