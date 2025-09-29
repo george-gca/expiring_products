@@ -18,13 +18,54 @@ export class NotificationService {
    * @returns {boolean} True if supported, false otherwise
    */
   checkSupport() {
-    return (
-      "serviceWorker" in navigator &&
-      "PushManager" in window &&
-      "Notification" in window &&
-      typeof firebase !== "undefined" &&
-      firebase.messaging
-    );
+    // Check for basic notification support
+    if (!("Notification" in window)) {
+      console.warn("This browser does not support notifications");
+      return false;
+    }
+
+    // Check for service worker support
+    if (!("serviceWorker" in navigator)) {
+      console.warn("This browser does not support service workers");
+      return false;
+    }
+
+    // Check for push manager support
+    if (!("PushManager" in window)) {
+      console.warn("This browser does not support push messaging");
+      return false;
+    }
+
+    // Check for Firebase support
+    if (typeof firebase === "undefined") {
+      console.warn("Firebase is not loaded");
+      return false;
+    }
+
+    if (!firebase.messaging) {
+      console.warn("Firebase messaging is not available");
+      return false;
+    }
+
+    // Additional check for mobile browsers
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    
+    if (isMobile) {
+      console.log("Mobile device detected, ensuring compatibility");
+      
+      // Check if running as PWA (installed app)
+      const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
+                    window.navigator.standalone === true ||
+                    document.referrer.includes('android-app://');
+      
+      if (!isPWA) {
+        console.warn("On mobile, notifications work best when the app is installed as a PWA");
+        // Still allow, but warn user
+      }
+    }
+
+    return true;
   }
 
   /**
@@ -88,20 +129,82 @@ export class NotificationService {
     }
 
     try {
-      const permission = await Notification.requestPermission();
-      console.log("Notification permission:", permission);
-
+      // Check current permission status
+      let permission = Notification.permission;
+      
       if (permission === "granted") {
+        console.log("Notification permission already granted");
         await this.getOrGenerateToken();
         await this.saveNotificationPreference(true);
         return true;
+      }
+
+      if (permission === "denied") {
+        console.warn("Notification permission was denied");
+        await this.saveNotificationPreference(false);
+        return false;
+      }
+
+      // Request permission with user-friendly approach for mobile
+      console.log("Requesting notification permission...");
+      
+      // For mobile browsers, ensure user interaction
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+      
+      if (isMobile) {
+        // Add a small delay to ensure user gesture is recognized
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      permission = await Notification.requestPermission();
+      console.log("Notification permission result:", permission);
+
+      if (permission === "granted") {
+        console.log("Notification permission granted!");
+        await this.getOrGenerateToken();
+        await this.saveNotificationPreference(true);
+        
+        // Send a welcome notification on mobile to confirm it's working
+        if (isMobile) {
+          setTimeout(() => {
+            this.sendWelcomeNotification();
+          }, 1000);
+        }
+        
+        return true;
       } else {
+        console.warn("Notification permission not granted:", permission);
         await this.saveNotificationPreference(false);
         return false;
       }
     } catch (error) {
       console.error("Error requesting notification permission:", error);
       return false;
+    }
+  }
+
+  /**
+   * Send a welcome notification after permission is granted
+   */
+  async sendWelcomeNotification() {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      
+      await registration.showNotification("🎉 Notifications Enabled!", {
+        body: "You'll now receive alerts about expiring items",
+        icon: "/assets/img/favicon_colored.png",
+        badge: "/assets/img/favicon.png",
+        tag: "welcome",
+        data: {
+          type: "welcome",
+          timestamp: Date.now(),
+        },
+        silent: false,
+        vibrate: [100, 50, 100],
+      });
+    } catch (error) {
+      console.error("Failed to send welcome notification:", error);
     }
   }
 
@@ -335,18 +438,116 @@ export class NotificationService {
    * Test notification (for debugging purposes)
    */
   async sendTestNotification() {
-    if (Notification.permission === "granted") {
-      const notification = new Notification("Test Notification", {
-        body: "This is a test notification from Expiring Products app",
-        icon: "/assets/img/favicon_colored.png",
-        badge: "/assets/img/favicon.png",
-        tag: "test",
-      });
+    console.log('sendTestNotification called, permission:', Notification.permission);
+    
+    if (Notification.permission !== "granted") {
+      console.warn("Cannot send test notification: permission not granted");
+      return false;
+    }
 
-      // Auto-close after 5 seconds
-      setTimeout(() => {
-        notification.close();
-      }, 5000);
+    // Detect if we're on mobile for method selection
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    
+    console.log('Device type:', isMobile ? 'mobile' : 'desktop');
+
+    try {
+      // For desktop, prefer direct Notification API for better compatibility
+      // For mobile, use service worker for better support
+      if (!isMobile) {
+        console.log('Using direct Notification API for desktop');
+        
+        const notification = new Notification("🔔 Test Notification", {
+          body: "This is a test notification from Expiring Products app",
+          icon: "/assets/img/favicon_colored.png",
+          badge: "/assets/img/favicon.png",
+          tag: "test",
+          requireInteraction: false,
+          data: {
+            type: "test",
+            timestamp: Date.now(),
+          }
+        });
+
+        // Auto-close after 5 seconds
+        setTimeout(() => {
+          notification.close();
+        }, 5000);
+        
+        console.log("Test notification sent successfully via direct API");
+        return true;
+      } else {
+        console.log('Using service worker for mobile');
+        
+        // For mobile compatibility, use the service worker to show notifications
+        const registration = await navigator.serviceWorker.ready;
+        console.log('Service worker ready:', registration);
+        
+        const notificationOptions = {
+          body: "This is a test notification from Expiring Products app",
+          icon: "/assets/img/favicon_colored.png",
+          badge: "/assets/img/favicon.png",
+          tag: "test",
+          data: {
+            type: "test",
+            timestamp: Date.now(),
+            url: "/",
+          },
+          actions: [
+            {
+              action: "view",
+              title: "Open App",
+            },
+            {
+              action: "dismiss",
+              title: "Dismiss",
+            },
+          ],
+          requireInteraction: false,
+          vibrate: [200, 100, 200], // Mobile vibration pattern
+          silent: false,
+        };
+
+        // Use service worker registration to show notification for better mobile support
+        await registration.showNotification("🔔 Test Notification", notificationOptions);
+        
+        console.log("Test notification sent successfully via service worker");
+        return true;
+      }
+    } catch (error) {
+      console.error("Primary notification method failed:", error);
+      
+      // Fallback: try the opposite method
+      try {
+        if (isMobile) {
+          console.log('Mobile fallback: trying direct Notification API');
+          const notification = new Notification("🔔 Test Notification", {
+            body: "This is a test notification from Expiring Products app",
+            icon: "/assets/img/favicon_colored.png",
+            badge: "/assets/img/favicon.png",
+            tag: "test",
+          });
+
+          setTimeout(() => {
+            notification.close();
+          }, 5000);
+        } else {
+          console.log('Desktop fallback: trying service worker');
+          const registration = await navigator.serviceWorker.ready;
+          await registration.showNotification("🔔 Test Notification", {
+            body: "This is a test notification from Expiring Products app",
+            icon: "/assets/img/favicon_colored.png",
+            badge: "/assets/img/favicon.png",
+            tag: "test",
+          });
+        }
+        
+        console.log("Fallback notification sent successfully");
+        return true;
+      } catch (fallbackError) {
+        console.error("All notification methods failed:", fallbackError);
+        return false;
+      }
     }
   }
 }

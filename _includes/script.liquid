@@ -790,29 +790,74 @@
     // Store last notification time
     localStorage.setItem(lastNotificationKey, now.toString());
 
-    // Use the browser's Notification API for immediate local notification
+    // Use platform-specific notification method
     if (Notification.permission === 'granted') {
-      const notification = new Notification(title, {
-        body: body,
-        icon: '/assets/img/favicon_colored.png',
-        badge: '/assets/img/favicon.png',
-        tag: `urgent-${timeframe}`,
-        requireInteraction: true,
-        data: {
-          type: 'urgent',
-          timeframe: timeframe,
-          items: items.map(item => ({ 
-            name: item.name, 
-            category: item.categoryKey,
-            categoryName: item.categoryName 
-          }))
-        }
-      });
+      // Detect platform
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+      
+      try {
+        if (!isMobile) {
+          // Desktop: use direct Notification API
+          const notification = new Notification(title, {
+            body: body,
+            icon: '/assets/img/favicon_colored.png',
+            badge: '/assets/img/favicon.png',
+            tag: `urgent-${timeframe}`,
+            requireInteraction: true,
+            data: {
+              type: 'urgent',
+              timeframe: timeframe,
+              items: items.map(item => ({ 
+                name: item.name, 
+                category: item.categoryKey,
+                categoryName: item.categoryName 
+              }))
+            }
+          });
 
-      // Auto-close after 10 seconds if not interacted with
-      setTimeout(() => {
-        notification.close();
-      }, 10000);
+          // Auto-close after 10 seconds if not interacted with
+          setTimeout(() => {
+            notification.close();
+          }, 10000);
+        } else {
+          // Mobile: use service worker
+          const registration = await navigator.serviceWorker.ready;
+          
+          await registration.showNotification(title, {
+            body: body,
+            icon: '/assets/img/favicon_colored.png',
+            badge: '/assets/img/favicon.png',
+            tag: `urgent-${timeframe}`,
+            requireInteraction: true,
+            vibrate: timeframe === 'today' ? [200, 100, 200, 100, 200] : [200, 100, 200],
+            data: {
+              type: 'urgent',
+              timeframe: timeframe,
+              url: "/",
+              items: items.map(item => ({ 
+                name: item.name, 
+                category: item.categoryKey,
+                categoryName: item.categoryName 
+              }))
+            },
+            actions: [
+              {
+                action: "view",
+                title: "Check Items",
+              },
+              {
+                action: "dismiss",
+                title: "Dismiss",
+              },
+            ],
+          });
+        }
+        
+        console.log(`${timeframe} notification sent successfully`);
+      } catch (error) {
+        console.error('Notification failed:', error);
+      }
     }
   }
 
@@ -859,26 +904,70 @@
     const body = `You have ${count} item${count === 1 ? '' : 's'} expiring this week. Stay organized!`;
 
     if (Notification.permission === 'granted') {
-      const notification = new Notification(title, {
-        body: body,
-        icon: '/assets/img/favicon_colored.png',
-        badge: '/assets/img/favicon.png',
-        tag: 'weekly-summary',
-        data: {
-          type: 'weekly',
-          count: count,
-          items: items.map(item => ({ 
-            name: item.name, 
-            category: item.categoryKey,
-            categoryName: item.categoryName 
-          }))
-        }
-      });
+      // Detect platform
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+      
+      try {
+        if (!isMobile) {
+          // Desktop: use direct Notification API
+          const notification = new Notification(title, {
+            body: body,
+            icon: '/assets/img/favicon_colored.png',
+            badge: '/assets/img/favicon.png',
+            tag: 'weekly-summary',
+            data: {
+              type: 'weekly',
+              count: count,
+              items: items.map(item => ({ 
+                name: item.name, 
+                category: item.categoryKey,
+                categoryName: item.categoryName 
+              }))
+            }
+          });
 
-      // Auto-close after 8 seconds
-      setTimeout(() => {
-        notification.close();
-      }, 8000);
+          // Auto-close after 8 seconds
+          setTimeout(() => {
+            notification.close();
+          }, 8000);
+        } else {
+          // Mobile: use service worker
+          const registration = await navigator.serviceWorker.ready;
+          
+          await registration.showNotification(title, {
+            body: body,
+            icon: '/assets/img/favicon_colored.png',
+            badge: '/assets/img/favicon.png',
+            tag: 'weekly-summary',
+            vibrate: [100, 50, 100],
+            data: {
+              type: 'weekly',
+              count: count,
+              url: "/",
+              items: items.map(item => ({ 
+                name: item.name, 
+                category: item.categoryKey,
+                categoryName: item.categoryName 
+              }))
+            },
+            actions: [
+              {
+                action: "view",
+                title: "View Items",
+              },
+              {
+                action: "dismiss",
+                title: "Dismiss",
+              },
+            ],
+          });
+        }
+        
+        console.log('Weekly reminder sent successfully');
+      } catch (error) {
+        console.error('Weekly notification failed:', error);
+      }
     }
   }
 

@@ -784,6 +784,18 @@ async function initializeNotificationSettingsUI() {
   const permissionRequest = document.getElementById('notification-permission-request');
   const blockedWarning = document.getElementById('notification-blocked-warning');
   const notSupportedWarning = document.getElementById('notification-not-supported');
+  const mobileTips = document.getElementById('mobile-notification-tips');
+
+  // Check if we're on mobile
+  const userAgent = navigator.userAgent.toLowerCase();
+  const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+
+  // Show mobile tips only if on mobile device
+  if (isMobile && mobileTips) {
+    mobileTips.style.display = 'block';
+  } else if (mobileTips) {
+    mobileTips.style.display = 'none';
+  }
 
   // Check support
   if (!notificationService.isSupported) {
@@ -866,10 +878,59 @@ async function initializeNotificationSettingsUI() {
   });
 
   testNotificationBtn.addEventListener('click', async () => {
-    if (notificationService.getPermissionStatus() === 'granted') {
-      await notificationService.sendTestNotification();
-    } else {
+    const permission = notificationService.getPermissionStatus();
+    
+    if (permission !== 'granted') {
       alert('Please enable notifications first.');
+      return;
+    }
+
+    // Provide visual feedback
+    const originalText = testNotificationBtn.innerHTML;
+    testNotificationBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
+    testNotificationBtn.disabled = true;
+
+    try {
+      const success = await notificationService.sendTestNotification();
+      
+      if (success) {
+        testNotificationBtn.innerHTML = '<i class="fa-solid fa-check"></i> Sent!';
+        
+        // Check if we're on mobile and provide additional feedback
+        const userAgent = navigator.userAgent.toLowerCase();
+        const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+        
+        if (isMobile) {
+          // Show additional mobile-specific guidance
+          setTimeout(() => {
+            const message = 'Notification sent! If you don\'t see it, try:\n' +
+                          '• Installing this app to your home screen\n' +
+                          '• Checking your notification settings\n' +
+                          '• Ensuring "Do Not Disturb" is off';
+            alert(message);
+          }, 1000);
+        }
+      } else {
+        testNotificationBtn.innerHTML = '<i class="fa-solid fa-exclamation-triangle"></i> Failed';
+        alert('Failed to send test notification. Please check your browser settings.');
+      }
+      
+      // Reset button after 3 seconds
+      setTimeout(() => {
+        testNotificationBtn.innerHTML = originalText;
+        testNotificationBtn.disabled = false;
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Test notification error:', error);
+      testNotificationBtn.innerHTML = '<i class="fa-solid fa-exclamation-triangle"></i> Error';
+      alert('Error sending test notification: ' + error.message);
+      
+      // Reset button after 3 seconds
+      setTimeout(() => {
+        testNotificationBtn.innerHTML = originalText;
+        testNotificationBtn.disabled = false;
+      }, 3000);
     }
   });
 
