@@ -335,7 +335,7 @@
     });
 
     // Toggle filter visibility based on shopping mode
-    toggleFiltersVisibility(isShoppingMode);
+    toggleSortingFilteringVisibility(isShoppingMode);
   }
 
   // Function to generate tab content using template-like approach
@@ -498,8 +498,7 @@
     updateCategoriesList();
     updateCategoryDropdown();
 
-    // Debug: Log that tabs have been updated
-    console.log('Category tabs updated. Categories:', window.userCategories.length);
+    // Category tabs have been updated
   }
 
   function setupCategoryListeners() {
