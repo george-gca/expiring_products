@@ -49,18 +49,24 @@ export class NotificationService {
 
     // Additional check for mobile browsers
     const userAgent = navigator.userAgent.toLowerCase();
-    const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
-    
+    const isMobile =
+      /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
+        userAgent
+      );
+
     if (isMobile) {
       console.log("Mobile device detected, ensuring compatibility");
-      
+
       // Check if running as PWA (installed app)
-      const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
-                    window.navigator.standalone === true ||
-                    document.referrer.includes('android-app://');
-      
+      const isPWA =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        window.navigator.standalone === true ||
+        document.referrer.includes("android-app://");
+
       if (!isPWA) {
-        console.warn("On mobile, notifications work best when the app is installed as a PWA");
+        console.warn(
+          "On mobile, notifications work best when the app is installed as a PWA"
+        );
         // Still allow, but warn user
       }
     }
@@ -86,16 +92,19 @@ export class NotificationService {
       this.userId = userId;
       this.vapidKey = vapidKey;
 
-      console.log('Initializing with VAPID key:', vapidKey ? vapidKey.substring(0, 20) + '...' : 'null');
+      console.log(
+        "Initializing with VAPID key:",
+        vapidKey ? vapidKey.substring(0, 20) + "..." : "null"
+      );
 
       if (!vapidKey) {
-        throw new Error('VAPID key is required for FCM');
+        throw new Error("VAPID key is required for FCM");
       }
 
       // Initialize Firebase Messaging
       this.messaging = firebase.messaging();
 
-      console.log('Firebase messaging initialized');
+      console.log("Firebase messaging initialized");
 
       // Get existing token or generate new one
       await this.getOrGenerateToken();
@@ -131,7 +140,7 @@ export class NotificationService {
     try {
       // Check current permission status
       let permission = Notification.permission;
-      
+
       if (permission === "granted") {
         console.log("Notification permission already granted");
         await this.getOrGenerateToken();
@@ -147,14 +156,17 @@ export class NotificationService {
 
       // Request permission with user-friendly approach for mobile
       console.log("Requesting notification permission...");
-      
+
       // For mobile browsers, ensure user interaction
       const userAgent = navigator.userAgent.toLowerCase();
-      const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
-      
+      const isMobile =
+        /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
+          userAgent
+        );
+
       if (isMobile) {
         // Add a small delay to ensure user gesture is recognized
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
 
       permission = await Notification.requestPermission();
@@ -164,14 +176,14 @@ export class NotificationService {
         console.log("Notification permission granted!");
         await this.getOrGenerateToken();
         await this.saveNotificationPreference(true);
-        
+
         // Send a welcome notification on mobile to confirm it's working
         if (isMobile) {
           setTimeout(() => {
             this.sendWelcomeNotification();
           }, 1000);
         }
-        
+
         return true;
       } else {
         console.warn("Notification permission not granted:", permission);
@@ -190,7 +202,7 @@ export class NotificationService {
   async sendWelcomeNotification() {
     try {
       const registration = await navigator.serviceWorker.ready;
-      
+
       await registration.showNotification("🎉 Notifications Enabled!", {
         body: "You'll now receive alerts about expiring items",
         icon: "/assets/img/favicon_colored.png",
@@ -224,16 +236,26 @@ export class NotificationService {
    * @returns {Promise<string|null>} The FCM token or null if failed
    */
   async getOrGenerateToken() {
-    console.log('getOrGenerateToken called, messaging:', !!this.messaging, 'permission:', Notification.permission);
-    
+    console.log(
+      "getOrGenerateToken called, messaging:",
+      !!this.messaging,
+      "permission:",
+      Notification.permission
+    );
+
     if (!this.messaging || Notification.permission !== "granted") {
-      console.log('Cannot generate token - messaging or permission not available');
+      console.log(
+        "Cannot generate token - messaging or permission not available"
+      );
       return null;
     }
 
     try {
-      console.log('Attempting to get FCM token with VAPID key:', this.vapidKey ? this.vapidKey.substring(0, 20) + '...' : 'null');
-      
+      console.log(
+        "Attempting to get FCM token with VAPID key:",
+        this.vapidKey ? this.vapidKey.substring(0, 20) + "..." : "null"
+      );
+
       const token = await this.messaging.getToken({
         vapidKey: this.vapidKey,
       });
@@ -438,8 +460,11 @@ export class NotificationService {
    * Test notification (for debugging purposes)
    */
   async sendTestNotification() {
-    console.log('sendTestNotification called, permission:', Notification.permission);
-    
+    console.log(
+      "sendTestNotification called, permission:",
+      Notification.permission
+    );
+
     if (Notification.permission !== "granted") {
       console.warn("Cannot send test notification: permission not granted");
       return false;
@@ -447,16 +472,22 @@ export class NotificationService {
 
     // Detect if we're on mobile for method selection
     const userAgent = navigator.userAgent.toLowerCase();
-    const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
-    
-    console.log('Device type:', isMobile ? 'mobile' : 'desktop');
+    const isMobile =
+      /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
+        userAgent
+      );
+
+    console.log("Device type:", isMobile ? "mobile" : "desktop");
+    console.log("User agent:", userAgent);
+    console.log("Service worker support:", "serviceWorker" in navigator);
+    console.log("Notification support:", "Notification" in window);
 
     try {
       // For desktop, prefer direct Notification API for better compatibility
       // For mobile, use service worker for better support
       if (!isMobile) {
-        console.log('Using direct Notification API for desktop');
-        
+        console.log("Using direct Notification API for desktop");
+
         const notification = new Notification("🔔 Test Notification", {
           body: "This is a test notification from Expiring Products app",
           icon: "/assets/img/favicon_colored.png",
@@ -466,23 +497,38 @@ export class NotificationService {
           data: {
             type: "test",
             timestamp: Date.now(),
-          }
+          },
         });
 
         // Auto-close after 5 seconds
         setTimeout(() => {
           notification.close();
         }, 5000);
-        
+
         console.log("Test notification sent successfully via direct API");
         return true;
       } else {
-        console.log('Using service worker for mobile');
-        
+        console.log("Using service worker for mobile");
+
+        // Check if service worker is available
+        if (!("serviceWorker" in navigator)) {
+          console.warn("Service Worker not supported on this device");
+          throw new Error("Service Worker not supported");
+        }
+
         // For mobile compatibility, use the service worker to show notifications
+        console.log("Waiting for service worker to be ready...");
         const registration = await navigator.serviceWorker.ready;
-        console.log('Service worker ready:', registration);
-        
+        console.log("Service worker ready:", registration);
+        console.log("Service worker state:", registration.active?.state);
+        console.log("Service worker scope:", registration.scope);
+
+        // Check if showNotification method exists
+        if (!registration.showNotification) {
+          console.warn("showNotification not available on registration");
+          throw new Error("showNotification not available");
+        }
+
         const notificationOptions = {
           body: "This is a test notification from Expiring Products app",
           icon: "/assets/img/favicon_colored.png",
@@ -509,18 +555,31 @@ export class NotificationService {
         };
 
         // Use service worker registration to show notification for better mobile support
-        await registration.showNotification("🔔 Test Notification", notificationOptions);
-        
+        console.log(
+          "Calling showNotification with options:",
+          notificationOptions
+        );
+        await registration.showNotification(
+          "🔔 Test Notification",
+          notificationOptions
+        );
+
         console.log("Test notification sent successfully via service worker");
         return true;
       }
     } catch (error) {
       console.error("Primary notification method failed:", error);
-      
+      console.error("Error details:", {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      });
+
       // Fallback: try the opposite method
       try {
+        console.log("Attempting fallback method...");
         if (isMobile) {
-          console.log('Mobile fallback: trying direct Notification API');
+          console.log("Mobile fallback: trying direct Notification API");
           const notification = new Notification("🔔 Test Notification", {
             body: "This is a test notification from Expiring Products app",
             icon: "/assets/img/favicon_colored.png",
@@ -532,7 +591,7 @@ export class NotificationService {
             notification.close();
           }, 5000);
         } else {
-          console.log('Desktop fallback: trying service worker');
+          console.log("Desktop fallback: trying service worker");
           const registration = await navigator.serviceWorker.ready;
           await registration.showNotification("🔔 Test Notification", {
             body: "This is a test notification from Expiring Products app",
@@ -541,11 +600,16 @@ export class NotificationService {
             tag: "test",
           });
         }
-        
+
         console.log("Fallback notification sent successfully");
         return true;
       } catch (fallbackError) {
         console.error("All notification methods failed:", fallbackError);
+        console.error("Fallback error details:", {
+          name: fallbackError.name,
+          message: fallbackError.message,
+          stack: fallbackError.stack,
+        });
         return false;
       }
     }
