@@ -18,7 +18,7 @@ function addHistoryData(name, duration, recurring, category) {
     recurring: recurring || false
   }, { merge: true })
   .catch(error => {
-    console.error("Error saving item history: ", error);
+    ErrorHandler.handleDatabaseError('save item history', error);
   });
 }
 
@@ -32,7 +32,7 @@ function addData(newItem) {
 
   return db.collection('users').doc(currentUser.uid).collection('items').add(newItem)
     .catch(error => {
-      console.error("Error adding item: ", error);
+      ErrorHandler.handleDatabaseError('add item', error);
       throw error;
     });
 }
@@ -76,12 +76,16 @@ function setupRealtimeListener(category) {
       // Refresh UI display
       updateDisplay();
     }, error => {
-      console.error("Firestore listener error: ", error);
+      ErrorHandler.handleDatabaseError('fetch items', error);
     });
 }
 
 /**
  * Initialize global data structures for category management
+ * Creates empty objects for storing category-specific data if they don't exist
+ * - itemsByCategory: Stores raw item data keyed by category
+ * - sortedItemsByCategory: Stores sorted item arrays for each category
+ * - fuseByCategory: Stores Fuse.js search instances for each category
  */
 function initializeGlobalDataStructures() {
   if (!window.itemsByCategory) window.itemsByCategory = {};
@@ -91,18 +95,25 @@ function initializeGlobalDataStructures() {
 
 /**
  * Update data structures for a specific category
- * @param {string} category - The category key
- * @param {Object} categoryItems - Items for this category
- * @param {Object} fuseOptions - Fuse.js configuration options
+ * This function maintains three synchronized data structures for efficient category management:
+ * 1. Raw items data for direct access
+ * 2. Sorted items array for display purposes
+ * 3. Fuse.js search index for fuzzy searching
+ *
+ * @param {string} category - The category key identifier
+ * @param {Object} categoryItems - Object containing items for this category (keyed by item ID)
+ * @param {Object} fuseOptions - Configuration options for Fuse.js search functionality
  */
 function updateCategoryData(category, categoryItems, fuseOptions) {
+  // Store raw items data for this category
   window.itemsByCategory[category] = categoryItems;
 
-  // Sort items for this category
+  // Sort items for this category using the legacy sorting function
   window.sortedItemsByCategory[category] = [];
   sortItems(categoryItems, window.sortedItemsByCategory[category]);
 
   // Create or update the Fuse.js search index for this category
+  // This enables fuzzy searching within the category
   window.fuseByCategory[category] = new Fuse(window.sortedItemsByCategory[category], fuseOptions);
 }
 
@@ -111,26 +122,43 @@ function updateCategoryData(category, categoryItems, fuseOptions) {
  * @param {Object} editedItem - The item data to update (must include id)
  */
 function editData(editedItem) {
-  if (!currentUser) return;
+  if (!currentUser) {
+    console.warn('Cannot update item: User not authenticated');
+    return;
+  }
 
+  // Create a copy of the item data without the ID field, as it's not part of the update payload
   const dataToUpdate = { ...editedItem };
-  delete dataToUpdate.id; // Remove ID as it's not part of the update payload
+  delete dataToUpdate.id;
 
   db.collection('users').doc(currentUser.uid).collection('items').doc(editedItem.id).update(dataToUpdate)
     .catch(error => {
-      console.error("Error updating item: ", error);
+      ErrorHandler.handleDatabaseError('update item', error);
     });
 }
 
 /**
- * Delete an item from the database
- * @param {string} id - The item ID to delete
+ * Permanently removes the item from the user's collection
+ * UI will be updated automatically via real-time listeners
+ *
+ * @param {string} id - The unique identifier of the item to delete
+ * @returns {void} - No return value
  */
 function deleteData(id) {
-  if (!currentUser) return;
+  if (!currentUser) {
+    console.warn('Cannot delete item: User not authenticated');
+    return;
+  }
+
+  if (!id) {
+    console.error('Cannot delete item: ID is required');
+    return;
+  }
 
   db.collection('users').doc(currentUser.uid).collection('items').doc(id).delete()
-    .catch(error => console.error("Error deleting item: ", error));
+    .catch(error => {
+      ErrorHandler.handleDatabaseError('delete item', error);
+    });
 }
 
 /**
@@ -147,7 +175,7 @@ function addCategory(categoryData) {
       return docRef.id;
     })
     .catch(error => {
-      console.error("Error adding category: ", error);
+      ErrorHandler.handleDatabaseError('add category', error);
       throw error;
     });
 }
@@ -166,7 +194,7 @@ function updateCategory(categoryId, categoryData) {
       console.log("Category updated successfully");
     })
     .catch(error => {
-      console.error("Error updating category: ", error);
+      ErrorHandler.handleDatabaseError('update category', error);
       throw error;
     });
 }
@@ -184,7 +212,7 @@ function deleteCategory(categoryId) {
       console.log("Category deleted successfully");
     })
     .catch(error => {
-      console.error("Error deleting category: ", error);
+      ErrorHandler.handleDatabaseError('delete category', error);
       throw error;
     });
 }
@@ -213,6 +241,6 @@ function setupCategoriesListener() {
       updateCategoryTabs();
       setupCategoryListeners();
     }, error => {
-      console.error("Categories listener error: ", error);
+      ErrorHandler.handleDatabaseError('fetch categories', error);
     });
 }
