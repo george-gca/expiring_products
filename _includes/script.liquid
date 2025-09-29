@@ -1,5 +1,6 @@
 <script type="module">
   import { clearDatabase, exportToJson, importFromJson } from '/assets/js/backup-and-restore-data.mjs';
+  import { notificationService } from '/assets/js/notification-service.mjs';
 
   // Luxon date library globals
   var DateTime = luxon.DateTime;
@@ -159,6 +160,22 @@
 
       // Setup dynamic categories system
       setupCategoriesListener();
+
+      // Initialize notification service
+      try {
+        const vapidKey = "{{ site.env.FIREBASE_VAPID_KEY }}";
+        await notificationService.initialize(firebase.app(), db, vapidKey, user.uid);
+        
+        // Set up notification scheduling after initialization
+        setupNotificationScheduling();
+        
+        // Initialize notification settings UI
+        if (typeof initializeNotificationSettingsUI === 'function') {
+          await initializeNotificationSettingsUI();
+        }
+      } catch (error) {
+        console.error('Failed to initialize notification service:', error);
+      }
 
     } else {
       // User is signed out. Show the login form.
@@ -619,6 +636,267 @@
       }
     });
   }
+
+  // ========================================
+  // NOTIFICATION SCHEDULING FUNCTIONS
+  // ========================================
+
+  /**
+   * Set up notification scheduling and periodic checks
+   */
+  function setupNotificationScheduling() {
+    // Check for notifications immediately
+    checkAndScheduleNotifications();
+
+    // Set up periodic checks (every hour)
+    setInterval(checkAndScheduleNotifications, 60 * 60 * 1000);
+
+    // Also check when items are updated
+    window.addEventListener('itemsUpdated', checkAndScheduleNotifications);
+  }
+
+  /**
+   * Check items and schedule appropriate notifications
+   */
+  async function checkAndScheduleNotifications() {
+    if (!notificationService.isSupported || !currentUser) {
+      return;
+    }
+
+    try {
+      const settings = await notificationService.getNotificationSettings();
+      
+      if (!settings.enabled) {
+        return;
+      }
+
+      // Get all items from all categories
+      const allItems = getAllItemsAcrossCategories();
+      
+      if (settings.urgentAlerts) {
+        await checkUrgentAlerts(allItems);
+      }
+
+      if (settings.weeklyReminders) {
+        await checkWeeklyReminders(allItems);
+      }
+
+    } catch (error) {
+      console.error('Error in notification scheduling:', error);
+    }
+  }
+
+  /**
+   * Get all items across all categories
+   * @returns {Array} Array of all items with category information
+   */
+  function getAllItemsAcrossCategories() {
+    const allItems = [];
+    
+    if (window.itemsByCategory) {
+      Object.entries(window.itemsByCategory).forEach(([categoryKey, items]) => {
+        Object.values(items).forEach(item => {
+          allItems.push({
+            ...item,
+            categoryKey: categoryKey,
+            categoryName: getCategoryName(categoryKey)
+          });
+        });
+      });
+    }
+
+    return allItems;
+  }
+
+  /**
+   * Get category display name by key
+   * @param {string} categoryKey - Category key
+   * @returns {string} Category display name
+   */
+  function getCategoryName(categoryKey) {
+    const category = window.userCategories.find(cat => cat.key === categoryKey);
+    return category ? `${category.emoji} ${category.name}` : categoryKey;
+  }
+
+  /**
+   * Check for urgent alerts (items expiring today or tomorrow)
+   * @param {Array} items - All items to check
+   */
+  async function checkUrgentAlerts(items) {
+    const now = DateTime.now();
+    const urgentItems = items.filter(item => {
+      const expiringDate = DateTime.isDateTime(item.expiring_date) 
+        ? item.expiring_date 
+        : DateTime.fromISO(item.expiring_date);
+      
+      const daysUntilExpiry = Math.ceil(expiringDate.diff(now, 'days').days);
+      return daysUntilExpiry <= 1 && daysUntilExpiry >= 0; // Today or tomorrow
+    });
+
+    if (urgentItems.length > 0) {
+      // Group by days until expiry
+      const expiringToday = urgentItems.filter(item => {
+        const expiringDate = DateTime.isDateTime(item.expiring_date) 
+          ? item.expiring_date 
+          : DateTime.fromISO(item.expiring_date);
+        return Math.ceil(expiringDate.diff(now, 'days').days) === 0;
+      });
+
+      const expiringTomorrow = urgentItems.filter(item => {
+        const expiringDate = DateTime.isDateTime(item.expiring_date) 
+          ? item.expiring_date 
+          : DateTime.fromISO(item.expiring_date);
+        return Math.ceil(expiringDate.diff(now, 'days').days) === 1;
+      });
+
+      // Send notification for items expiring today
+      if (expiringToday.length > 0) {
+        await sendUrgentNotification(expiringToday, 'today');
+      }
+
+      // Send notification for items expiring tomorrow
+      if (expiringTomorrow.length > 0) {
+        await sendUrgentNotification(expiringTomorrow, 'tomorrow');
+      }
+    }
+  }
+
+  /**
+   * Send urgent notification for items expiring soon
+   * @param {Array} items - Items expiring soon
+   * @param {string} timeframe - 'today' or 'tomorrow'
+   */
+  async function sendUrgentNotification(items, timeframe) {
+    const lastNotificationKey = `lastUrgentNotification_${timeframe}`;
+    const lastSent = localStorage.getItem(lastNotificationKey);
+    const now = Date.now();
+    
+    // Don't send urgent notifications more than once every 6 hours
+    if (lastSent && (now - parseInt(lastSent)) < 6 * 60 * 60 * 1000) {
+      return;
+    }
+
+    const count = items.length;
+    const itemName = items.length === 1 ? items[0].name : `${count} items`;
+    
+    const title = timeframe === 'today' 
+      ? `⚠️ Items Expiring Today!`
+      : `📅 Items Expiring Tomorrow`;
+    
+    const body = timeframe === 'today'
+      ? `${itemName} expire${count === 1 ? 's' : ''} today. Check your items!`
+      : `${itemName} expire${count === 1 ? 's' : ''} tomorrow. Plan ahead!`;
+
+    // Store last notification time
+    localStorage.setItem(lastNotificationKey, now.toString());
+
+    // Use the browser's Notification API for immediate local notification
+    if (Notification.permission === 'granted') {
+      const notification = new Notification(title, {
+        body: body,
+        icon: '/assets/img/favicon_colored.png',
+        badge: '/assets/img/favicon.png',
+        tag: `urgent-${timeframe}`,
+        requireInteraction: true,
+        data: {
+          type: 'urgent',
+          timeframe: timeframe,
+          items: items.map(item => ({ 
+            name: item.name, 
+            category: item.categoryKey,
+            categoryName: item.categoryName 
+          }))
+        }
+      });
+
+      // Auto-close after 10 seconds if not interacted with
+      setTimeout(() => {
+        notification.close();
+      }, 10000);
+    }
+  }
+
+  /**
+   * Check for weekly reminder (summary of expiring items)
+   * @param {Array} items - All items to check
+   */
+  async function checkWeeklyReminders(items) {
+    const lastWeeklyReminder = localStorage.getItem('lastWeeklyReminder');
+    const now = Date.now();
+    const oneWeek = 7 * 24 * 60 * 60 * 1000;
+
+    // Send weekly reminder only once per week (on Sundays)
+    const today = new Date();
+    const isWeekend = today.getDay() === 0 || today.getDay() === 6; // Sunday or Saturday
+    
+    if (!isWeekend || (lastWeeklyReminder && (now - parseInt(lastWeeklyReminder)) < oneWeek)) {
+      return;
+    }
+
+    const nowDateTime = DateTime.now();
+    const itemsExpiringThisWeek = items.filter(item => {
+      const expiringDate = DateTime.isDateTime(item.expiring_date) 
+        ? item.expiring_date 
+        : DateTime.fromISO(item.expiring_date);
+      
+      const daysUntilExpiry = Math.ceil(expiringDate.diff(nowDateTime, 'days').days);
+      return daysUntilExpiry >= 0 && daysUntilExpiry <= 7;
+    });
+
+    if (itemsExpiringThisWeek.length > 0) {
+      await sendWeeklyReminderNotification(itemsExpiringThisWeek);
+      localStorage.setItem('lastWeeklyReminder', now.toString());
+    }
+  }
+
+  /**
+   * Send weekly reminder notification
+   * @param {Array} items - Items expiring this week
+   */
+  async function sendWeeklyReminderNotification(items) {
+    const count = items.length;
+    const title = `📋 Weekly Summary`;
+    const body = `You have ${count} item${count === 1 ? '' : 's'} expiring this week. Stay organized!`;
+
+    if (Notification.permission === 'granted') {
+      const notification = new Notification(title, {
+        body: body,
+        icon: '/assets/img/favicon_colored.png',
+        badge: '/assets/img/favicon.png',
+        tag: 'weekly-summary',
+        data: {
+          type: 'weekly',
+          count: count,
+          items: items.map(item => ({ 
+            name: item.name, 
+            category: item.categoryKey,
+            categoryName: item.categoryName 
+          }))
+        }
+      });
+
+      // Auto-close after 8 seconds
+      setTimeout(() => {
+        notification.close();
+      }, 8000);
+    }
+  }
+
+  /**
+   * Helper function to switch to a specific category (called from service worker)
+   * @param {string} categoryKey - Category key to switch to
+   */
+  window.switchToCategory = function(categoryKey) {
+    const tab = document.querySelector(`[data-bs-target="#${categoryKey}-tab-pane"]`);
+    if (tab) {
+      tab.click();
+    }
+  };
+
+  /**
+   * Expose notification service for settings UI
+   */
+  window.notificationService = notificationService;
 
   {% include scripts/ui.js.liquid %}
   {% include scripts/utils.js.liquid %}

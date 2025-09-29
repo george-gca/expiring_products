@@ -27,6 +27,85 @@
 
       <hr>
 
+      <h5>🔔 Notifications</h5>
+      <div class="notification-settings mb-4">
+        <div class="form-check form-switch mb-3">
+          <input class="form-check-input" type="checkbox" role="switch" id="notifications-enabled-switch">
+          <label class="form-check-label" for="notifications-enabled-switch">
+            Enable push notifications
+          </label>
+          <small class="form-text text-muted d-block">
+            Get notified about expiring items even when the app is closed
+          </small>
+        </div>
+
+        <div id="notification-options" class="ms-3" style="display: none;">
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="urgent-alerts-checkbox">
+            <label class="form-check-label" for="urgent-alerts-checkbox">
+              Urgent alerts
+            </label>
+            <small class="form-text text-muted d-block">
+              Get notified when items expire today or tomorrow
+            </small>
+          </div>
+
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="weekly-reminders-checkbox">
+            <label class="form-check-label" for="weekly-reminders-checkbox">
+              Weekly summaries
+            </label>
+            <small class="form-text text-muted d-block">
+              Get a weekly summary of items expiring this week
+            </small>
+          </div>
+
+          <div class="mt-3">
+            <button id="test-notification-btn" class="btn btn-outline-info btn-sm">
+              <i class="fa-solid fa-bell"></i> Test notification
+            </button>
+            <small class="form-text text-muted d-block mt-1">
+              Send a test notification to verify everything is working
+            </small>
+          </div>
+        </div>
+
+        <div id="notification-permission-request" class="alert alert-info" style="display: none;">
+          <div class="d-flex align-items-center">
+            <i class="fa-solid fa-info-circle me-2"></i>
+            <div class="flex-grow-1">
+              <strong>Enable notifications</strong><br>
+              <small>Allow notifications to get alerts about expiring items</small>
+            </div>
+            <button id="request-permission-btn" class="btn btn-primary btn-sm">
+              Enable
+            </button>
+          </div>
+        </div>
+
+        <div id="notification-blocked-warning" class="alert alert-warning" style="display: none;">
+          <div class="d-flex align-items-center">
+            <i class="fa-solid fa-exclamation-triangle me-2"></i>
+            <div>
+              <strong>Notifications blocked</strong><br>
+              <small>Notifications are blocked by your browser. Please enable them in your browser settings and refresh the page.</small>
+            </div>
+          </div>
+        </div>
+
+        <div id="notification-not-supported" class="alert alert-secondary" style="display: none;">
+          <div class="d-flex align-items-center">
+            <i class="fa-solid fa-info-circle me-2"></i>
+            <div>
+              <strong>Notifications not supported</strong><br>
+              <small>Your browser doesn't support push notifications.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr>
+
       <div class="settings-actions">
         <div class="d-flex gap-2 flex-wrap">
           <input type="button" id="export-products-input" class="d-none"/>

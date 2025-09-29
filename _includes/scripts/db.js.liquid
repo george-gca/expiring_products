@@ -75,6 +75,9 @@ function setupRealtimeListener(category) {
 
       // Refresh UI display
       updateDisplay();
+
+      // Dispatch event for notification checking
+      window.dispatchEvent(new CustomEvent('itemsUpdated'));
     }, error => {
       ErrorHandler.handleDatabaseError('fetch items', error);
     });

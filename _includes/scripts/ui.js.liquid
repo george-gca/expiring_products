@@ -761,3 +761,174 @@ function updateCategoriesList() {
     });
   });
 }
+
+// ========================================
+// NOTIFICATION SETTINGS UI HANDLERS
+// ========================================
+
+/**
+ * Initialize notification settings UI when user logs in
+ */
+async function initializeNotificationSettingsUI() {
+  if (!window.notificationService) {
+    return;
+  }
+
+  const notificationsEnabledSwitch = document.getElementById('notifications-enabled-switch');
+  const urgentAlertsCheckbox = document.getElementById('urgent-alerts-checkbox');
+  const weeklyRemindersCheckbox = document.getElementById('weekly-reminders-checkbox');
+  const testNotificationBtn = document.getElementById('test-notification-btn');
+  const requestPermissionBtn = document.getElementById('request-permission-btn');
+
+  const notificationOptions = document.getElementById('notification-options');
+  const permissionRequest = document.getElementById('notification-permission-request');
+  const blockedWarning = document.getElementById('notification-blocked-warning');
+  const notSupportedWarning = document.getElementById('notification-not-supported');
+
+  // Check support
+  if (!notificationService.isSupported) {
+    notSupportedWarning.style.display = 'block';
+    notificationsEnabledSwitch.disabled = true;
+    return;
+  }
+
+  // Update UI based on current permission status
+  await updateNotificationPermissionUI();
+
+  // Load user's notification settings
+  try {
+    const settings = await notificationService.getNotificationSettings();
+    notificationsEnabledSwitch.checked = settings.enabled;
+    urgentAlertsCheckbox.checked = settings.urgentAlerts !== false;
+    weeklyRemindersCheckbox.checked = settings.weeklyReminders !== false;
+    
+    toggleNotificationOptions(settings.enabled);
+  } catch (error) {
+    console.error('Error loading notification settings:', error);
+  }
+
+  // Event listeners
+  notificationsEnabledSwitch.addEventListener('change', async (e) => {
+    const enabled = e.target.checked;
+    
+    if (enabled) {
+      const permission = notificationService.getPermissionStatus();
+      
+      if (permission === 'default') {
+        // Need to request permission first
+        const granted = await notificationService.requestPermission();
+        if (!granted) {
+          e.target.checked = false;
+          await updateNotificationPermissionUI();
+          return;
+        }
+      } else if (permission === 'denied') {
+        // Permission was denied
+        e.target.checked = false;
+        await updateNotificationPermissionUI();
+        return;
+      }
+    } else {
+      // Disable notifications
+      await notificationService.disableNotifications();
+    }
+
+    // Update settings
+    const currentSettings = await notificationService.getNotificationSettings();
+    await notificationService.updateNotificationSettings({
+      ...currentSettings,
+      enabled: enabled
+    });
+
+    toggleNotificationOptions(enabled);
+    await updateNotificationPermissionUI();
+  });
+
+  urgentAlertsCheckbox.addEventListener('change', async (e) => {
+    const currentSettings = await notificationService.getNotificationSettings();
+    await notificationService.updateNotificationSettings({
+      ...currentSettings,
+      urgentAlerts: e.target.checked
+    });
+  });
+
+  weeklyRemindersCheckbox.addEventListener('change', async (e) => {
+    const currentSettings = await notificationService.getNotificationSettings();
+    await notificationService.updateNotificationSettings({
+      ...currentSettings,
+      weeklyReminders: e.target.checked
+    });
+  });
+
+  testNotificationBtn.addEventListener('click', async () => {
+    if (notificationService.getPermissionStatus() === 'granted') {
+      await notificationService.sendTestNotification();
+    } else {
+      alert('Please enable notifications first.');
+    }
+  });
+
+  requestPermissionBtn.addEventListener('click', async () => {
+    const granted = await notificationService.requestPermission();
+    if (granted) {
+      notificationsEnabledSwitch.checked = true;
+      toggleNotificationOptions(true);
+    }
+    await updateNotificationPermissionUI();
+  });
+}
+
+/**
+ * Update notification permission UI based on current status
+ */
+async function updateNotificationPermissionUI() {
+  if (!notificationService.isSupported) {
+    return;
+  }
+
+  const permission = notificationService.getPermissionStatus();
+  const notificationOptions = document.getElementById('notification-options');
+  const permissionRequest = document.getElementById('notification-permission-request');
+  const blockedWarning = document.getElementById('notification-blocked-warning');
+
+  // Hide all status elements first
+  permissionRequest.style.display = 'none';
+  blockedWarning.style.display = 'none';
+
+  switch (permission) {
+    case 'granted':
+      // Permission granted, show options if enabled
+      const settings = await notificationService.getNotificationSettings();
+      toggleNotificationOptions(settings.enabled);
+      break;
+
+    case 'denied':
+      // Permission denied, show warning
+      blockedWarning.style.display = 'block';
+      notificationOptions.style.display = 'none';
+      break;
+
+    case 'default':
+      // Permission not requested yet, show request option
+      const notificationsEnabled = document.getElementById('notifications-enabled-switch').checked;
+      if (notificationsEnabled) {
+        permissionRequest.style.display = 'block';
+      }
+      notificationOptions.style.display = 'none';
+      break;
+  }
+}
+
+/**
+ * Toggle visibility of notification options
+ * @param {boolean} enabled - Whether notifications are enabled
+ */
+function toggleNotificationOptions(enabled) {
+  const notificationOptions = document.getElementById('notification-options');
+  const permission = notificationService.getPermissionStatus();
+  
+  notificationOptions.style.display = (enabled && permission === 'granted') ? 'block' : 'none';
+}
+
+// Expose function for use when user logs in
+window.initializeNotificationSettingsUI = initializeNotificationSettingsUI;

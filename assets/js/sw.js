@@ -130,3 +130,159 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
+// ========================================
+// PUSH NOTIFICATION HANDLERS
+// ========================================
+
+/**
+ * Handle push notification events from Firebase Cloud Messaging
+ */
+self.addEventListener("push", (event) => {
+  console.log("Push event received:", event);
+
+  if (!event.data) {
+    console.warn("Push event received but no data");
+    return;
+  }
+
+  let notificationData;
+  try {
+    notificationData = event.data.json();
+  } catch (error) {
+    console.error("Failed to parse push notification data:", error);
+    return;
+  }
+
+  // Extract notification details from FCM payload
+  const { notification, data } = notificationData;
+  const title = notification?.title || "Expiring Products";
+  const body = notification?.body || "You have items to check!";
+  const icon = "/assets/img/favicon_colored.png";
+  const badge = "/assets/img/favicon.png";
+
+  // Notification options
+  const options = {
+    body,
+    icon,
+    badge,
+    data: {
+      url: data?.url || "/",
+      category: data?.category || null,
+      type: data?.type || "general",
+      timestamp: Date.now(),
+      ...data, // Include any additional data from FCM
+    },
+    actions: [
+      {
+        action: "view",
+        title: "View Items",
+        icon: "/assets/img/favicon.png",
+      },
+      {
+        action: "dismiss",
+        title: "Dismiss",
+      },
+    ],
+    tag: data?.type || "expiring-products", // Group similar notifications
+    requireInteraction: data?.type === "urgent", // Keep urgent notifications visible
+    vibrate: data?.type === "urgent" ? [200, 100, 200] : [100],
+  };
+
+  // Show the notification
+  event.waitUntil(
+    self.registration
+      .showNotification(title, options)
+      .catch((error) => {
+        console.error("Failed to show notification:", error);
+      })
+  );
+});
+
+/**
+ * Handle notification click events
+ */
+self.addEventListener("notificationclick", (event) => {
+  console.log("Notification clicked:", event);
+
+  const { notification, action } = event;
+  const data = notification.data || {};
+
+  // Close the notification
+  notification.close();
+
+  if (action === "dismiss") {
+    // User dismissed the notification, do nothing
+    return;
+  }
+
+  // Default action or "view" action - open the app
+  const urlToOpen = data.url || "/";
+
+  event.waitUntil(
+    clients
+      .matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      })
+      .then((clientList) => {
+        // Check if the app is already open
+        for (const client of clientList) {
+          if (client.url.includes(self.location.origin) && "focus" in client) {
+            // Focus the existing window and navigate if needed
+            return client.focus().then(() => {
+              if (urlToOpen !== "/" && "navigate" in client) {
+                return client.navigate(urlToOpen);
+              }
+              // Send message to client to handle category switching
+              if (data.category) {
+                client.postMessage({
+                  type: "NOTIFICATION_CLICK",
+                  category: data.category,
+                  data: data,
+                });
+              }
+            });
+          }
+        }
+
+        // No existing window found, open a new one
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen);
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to handle notification click:", error);
+      })
+  );
+});
+
+/**
+ * Handle notification close events (when user dismisses without clicking)
+ */
+self.addEventListener("notificationclose", (event) => {
+  console.log("Notification closed:", event);
+  
+  const data = event.notification.data || {};
+  
+  // You could track analytics here if needed
+  // For example, send a message to the client about dismissed notifications
+  event.waitUntil(
+    clients
+      .matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      })
+      .then((clientList) => {
+        clientList.forEach((client) => {
+          client.postMessage({
+            type: "NOTIFICATION_DISMISSED",
+            data: data,
+          });
+        });
+      })
+      .catch((error) => {
+        console.error("Failed to handle notification close:", error);
+      })
+  );
+});

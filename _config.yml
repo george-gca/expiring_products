@@ -83,6 +83,10 @@ third_party_libraries:
     url:
       js: "https://www.gstatic.com/firebasejs/{{version}}/firebase-firestore-compat.js"
     version: "9.6.7"
+  firebase-messaging:
+    url:
+      js: "https://www.gstatic.com/firebasejs/{{version}}/firebase-messaging-compat.js"
+    version: "9.6.7"
   font-awesome:
     integrity:
       css: "sha256-XfA0ppGOANs88Ds+9FqVLy3xIGzT/25K/VLmRRxE9ow="
