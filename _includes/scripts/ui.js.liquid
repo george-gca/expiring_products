@@ -801,7 +801,7 @@ async function initializeNotificationSettingsUI() {
     notificationsEnabledSwitch.checked = settings.enabled;
     urgentAlertsCheckbox.checked = settings.urgentAlerts !== false;
     weeklyRemindersCheckbox.checked = settings.weeklyReminders !== false;
-    
+
     toggleNotificationOptions(settings.enabled);
   } catch (error) {
     console.error('Error loading notification settings:', error);
@@ -809,14 +809,18 @@ async function initializeNotificationSettingsUI() {
 
   // Event listeners
   notificationsEnabledSwitch.addEventListener('change', async (e) => {
+    console.log('Notification switch toggled, enabled:', e.target.checked);
     const enabled = e.target.checked;
-    
+
     if (enabled) {
       const permission = notificationService.getPermissionStatus();
-      
+      console.log('Current permission status:', permission);
+
       if (permission === 'default') {
         // Need to request permission first
+        console.log('Requesting notification permission...');
         const granted = await notificationService.requestPermission();
+        console.log('Permission granted:', granted);
         if (!granted) {
           e.target.checked = false;
           await updateNotificationPermissionUI();
@@ -824,6 +828,7 @@ async function initializeNotificationSettingsUI() {
         }
       } else if (permission === 'denied') {
         // Permission was denied
+        console.log('Permission was denied');
         e.target.checked = false;
         await updateNotificationPermissionUI();
         return;
@@ -926,7 +931,7 @@ async function updateNotificationPermissionUI() {
 function toggleNotificationOptions(enabled) {
   const notificationOptions = document.getElementById('notification-options');
   const permission = notificationService.getPermissionStatus();
-  
+
   notificationOptions.style.display = (enabled && permission === 'granted') ? 'block' : 'none';
 }
 

@@ -191,11 +191,9 @@ self.addEventListener("push", (event) => {
 
   // Show the notification
   event.waitUntil(
-    self.registration
-      .showNotification(title, options)
-      .catch((error) => {
-        console.error("Failed to show notification:", error);
-      })
+    self.registration.showNotification(title, options).catch((error) => {
+      console.error("Failed to show notification:", error);
+    })
   );
 });
 
@@ -262,9 +260,9 @@ self.addEventListener("notificationclick", (event) => {
  */
 self.addEventListener("notificationclose", (event) => {
   console.log("Notification closed:", event);
-  
+
   const data = event.notification.data || {};
-  
+
   // You could track analytics here if needed
   // For example, send a message to the client about dismissed notifications
   event.waitUntil(

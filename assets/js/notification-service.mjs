@@ -45,17 +45,19 @@ export class NotificationService {
       this.userId = userId;
       this.vapidKey = vapidKey;
 
+      console.log('Initializing with VAPID key:', vapidKey ? vapidKey.substring(0, 20) + '...' : 'null');
+
+      if (!vapidKey) {
+        throw new Error('VAPID key is required for FCM');
+      }
+
       // Initialize Firebase Messaging
       this.messaging = firebase.messaging();
 
+      console.log('Firebase messaging initialized');
+
       // Get existing token or generate new one
       await this.getOrGenerateToken();
-
-      // Listen for token refresh
-      this.messaging.onTokenRefresh(async () => {
-        console.log("FCM token refreshed");
-        await this.getOrGenerateToken();
-      });
 
       // Handle foreground messages
       this.messaging.onMessage((payload) => {
@@ -119,14 +121,18 @@ export class NotificationService {
    * @returns {Promise<string|null>} The FCM token or null if failed
    */
   async getOrGenerateToken() {
+    console.log('getOrGenerateToken called, messaging:', !!this.messaging, 'permission:', Notification.permission);
+    
     if (!this.messaging || Notification.permission !== "granted") {
+      console.log('Cannot generate token - messaging or permission not available');
       return null;
     }
 
     try {
+      console.log('Attempting to get FCM token with VAPID key:', this.vapidKey ? this.vapidKey.substring(0, 20) + '...' : 'null');
+      
       const token = await this.messaging.getToken({
         vapidKey: this.vapidKey,
-        serviceWorkerRegistration: await navigator.serviceWorker.ready,
       });
 
       if (token) {
