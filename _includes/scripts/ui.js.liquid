@@ -542,13 +542,13 @@ document.getElementById('export-products-input').addEventListener('click', funct
     return;
   }
 
-  exportToJson(db)
+  exportToJson(db, currentUser.uid)
   .then(result => {
     const blob = new Blob([result], {type: 'application/json'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'expiring_products.json';
+    a.download = `expiring_products.json`;
     a.click();
     URL.revokeObjectURL(url);
     a.remove();
@@ -565,8 +565,8 @@ document.getElementById('import-products-input').addEventListener('change', func
 
   reader.onload = function (e) {
     const result = e.target.result;
-    clearDatabase(db)
-    .then(() => importFromJson(db, result))
+    clearDatabase(db, currentUser.uid)
+    .then(() => importFromJson(db, currentUser.uid, result))
     .then(() => {
       // Refresh all categories after import
       updateDisplay();
