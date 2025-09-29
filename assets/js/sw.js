@@ -7,12 +7,12 @@ self.addEventListener("install", (e) => {
         "/",
         "/index.html",
         "/en-us/index.html",
-        "/assets/js/idb-backup-and-restore.mjs",
+        "/assets/js/backup-and-restore-data.mjs",
         "/assets/img/favicon.png",
         "/assets/img/favicon_colored.png",
         // '/style.css'
       ]);
-    }),
+    })
   );
 });
 
@@ -25,15 +25,15 @@ self.addEventListener("activate", (e) => {
             return;
           }
           return caches.delete(key);
-        }),
+        })
       );
-    }),
+    })
   );
 });
 
 self.addEventListener("fetch", (e) => {
   console.log(e.request.url);
   e.respondWith(
-    caches.match(e.request).then((response) => response || fetch(e.request)),
+    caches.match(e.request).then((response) => response || fetch(e.request))
   );
 });
