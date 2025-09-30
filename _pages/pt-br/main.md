@@ -5,7 +5,9 @@ permalink: /
 
 add_category: Adicionar Categoria
 add_item: Adicionar item
-all_items: Todos os Itens
+add_from_shopping_list: Adicionar da lista de compras
+add_single_item: Adicionar item único
+all_items: Todos os itens
 category: Categoria
 category_name: Nome da categoria
 category_emoji: Emoji

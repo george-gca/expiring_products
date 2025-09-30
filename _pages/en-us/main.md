@@ -5,6 +5,8 @@ permalink: /
 
 add_category: Add Category
 add_item: Add item
+add_from_shopping_list: Add from shopping list
+add_single_item: Add single item
 all_items: All Items
 category: Category
 category_name: Category name

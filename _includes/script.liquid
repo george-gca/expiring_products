@@ -336,7 +336,99 @@
 
     // Toggle filter visibility based on shopping mode
     toggleSortingFilteringVisibility(isShoppingMode);
+
+    // Update floating action buttons for all categories
+    updateFloatingActionButtons(isShoppingMode);
   }
+
+  // Function to update floating action buttons based on shopping mode
+  function updateFloatingActionButtons(isShoppingMode) {
+    console.log('updateFloatingActionButtons called with isShoppingMode:', isShoppingMode);
+    console.log('userCategories:', window.userCategories);
+
+    window.userCategories.forEach(category => {
+      const fabContainer = document.getElementById(`${category.key}-fab-container`);
+      console.log(`FAB container for ${category.key}:`, fabContainer);
+      if (!fabContainer) return;
+
+      fabContainer.innerHTML = '';
+
+      if (isShoppingMode) {
+        console.log('Creating shopping mode dropdown for category:', category.key);
+        // Shopping mode: dropdown button with two options
+        fabContainer.innerHTML = `
+          <div class="btn-group dropup">
+            <button type="button" class="btn btn-floating text-white btn-lg dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: #f44336;" aria-label="{{ page.add_item }}">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="#" onclick="openAddItemModalForShopping('${category.key}')">
+                <i class="fa-solid fa-list"></i> {{ page.add_from_shopping_list }}
+              </a></li>
+              <li><a class="dropdown-item" href="#" onclick="openAddItemModalForSingle('${category.key}')">
+                <i class="fa-solid fa-plus"></i> {{ page.add_single_item }}
+              </a></li>
+            </ul>
+          </div>
+        `;
+      } else {
+        console.log('Creating normal mode button for category:', category.key);
+        // Normal mode: simple add button
+        fabContainer.innerHTML = `
+          <button class="btn btn-floating text-white btn-lg" aria-label="{{ page.add_item }}" style="background-color: #f44336;" data-bs-toggle="modal" data-bs-target="#add-item-modal">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+        `;
+      }
+    });
+  }
+
+  // Function to open add item modal for shopping list (current behavior)
+  function openAddItemModalForShopping(categoryKey) {
+    console.log('openAddItemModalForShopping called with categoryKey:', categoryKey);
+    // Clear any existing shopping item reference
+    window.currentShoppingItem = null;
+
+    // Reset the form and set up for normal add
+    resetAddItemForm();
+    document.getElementById('add-item-modal-title').textContent = '{{ page.add_from_shopping_list }}';
+
+    // Set up the modal as usual
+    setupExpirationDate();
+    clearDatalistOptions();
+    updateCategoryDropdown();
+    setSelectedCategory(categoryKey);
+    loadCategoryHistory(categoryKey);
+
+    // Open the modal
+    new bootstrap.Modal(document.getElementById('add-item-modal')).show();
+  }
+
+  // Function to open add item modal for single item purchase
+  function openAddItemModalForSingle(categoryKey) {
+    console.log('openAddItemModalForSingle called with categoryKey:', categoryKey);
+    // Clear any existing shopping item reference
+    window.currentShoppingItem = null;
+
+    // Reset the form and set up for single purchase
+    resetAddItemForm();
+    document.getElementById('add-item-modal-title').textContent = '{{ page.add_single_item }}';
+
+    // Set up the modal as usual
+    setupExpirationDate();
+    clearDatalistOptions();
+    updateCategoryDropdown();
+    setSelectedCategory(categoryKey);
+    loadCategoryHistory(categoryKey);
+
+    // Uncheck recurring purchase for single items
+    document.getElementById('recurring-purchase-checkbox').checked = false;
+
+    // Open the modal
+    new bootstrap.Modal(document.getElementById('add-item-modal')).show();
+  }  // Make functions globally available
+  window.openAddItemModalForShopping = openAddItemModalForShopping;
+  window.openAddItemModalForSingle = openAddItemModalForSingle;
 
   // Function to generate tab content using template-like approach
   function generateTabContent(categoryKey, categoryName, tabIndex) {
@@ -396,11 +488,8 @@
 
       <ul class="list-group list-group-flush list-unstyled mt-3" id="${categoryKey}-list"></ul>
 
-      <!-- Floating add item button -->
-      <div class="fixed-action-btn" style="height: 80px;">
-        <button class="btn btn-floating text-white btn-lg" aria-label="{{ page.add_item }}" style="background-color: #f44336;" data-bs-toggle="modal" data-bs-target="#add-item-modal">
-          <i class="fa-solid fa-plus"></i>
-        </button>
+      <!-- Floating add item button - will be updated based on shopping mode -->
+      <div class="fixed-action-btn" style="height: 80px;" id="${categoryKey}-fab-container">
       </div>
     `;
   }
@@ -497,6 +586,10 @@
     // Update categories management list and dropdown
     updateCategoriesList();
     updateCategoryDropdown();
+
+    // Update floating action buttons for the new tabs
+    const isShoppingMode = document.getElementById('shopping-mode-switch').checked;
+    updateFloatingActionButtons(isShoppingMode);
 
     // Category tabs have been updated
   }
