@@ -171,7 +171,7 @@ function addCategory(categoryData) {
 
   return db.collection('users').doc(currentUser.uid).collection('categories').add(categoryData)
     .then(docRef => {
-      console.log("Category added with ID: ", docRef.id);
+      // console.log("Category added with ID: ", docRef.id);
       return docRef.id;
     })
     .catch(error => {
@@ -191,7 +191,7 @@ function updateCategory(categoryId, categoryData) {
 
   return db.collection('users').doc(currentUser.uid).collection('categories').doc(categoryId).update(categoryData)
     .then(() => {
-      console.log("Category updated successfully");
+      // console.log("Category updated successfully");
     })
     .catch(error => {
       ErrorHandler.handleDatabaseError('update category', error);
@@ -209,7 +209,7 @@ function deleteCategory(categoryId) {
 
   return db.collection('users').doc(currentUser.uid).collection('categories').doc(categoryId).delete()
     .then(() => {
-      console.log("Category deleted successfully");
+      // console.log("Category deleted successfully");
     })
     .catch(error => {
       ErrorHandler.handleDatabaseError('delete category', error);

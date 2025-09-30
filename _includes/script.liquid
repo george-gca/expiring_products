@@ -562,30 +562,14 @@
 
     const expirySettings = ExpiryFilterSettings.getSettings();
 
-    console.log(`Category: ${categoryKey}, Hidden Count: ${hiddenCount}, Show Hidden: ${showHidden}, Expiry Filter Enabled: ${expirySettings.enabled}`);
-
     if (hiddenCount > 0 && expirySettings.enabled) {
       toggleButton.style.display = 'block';
-      const icon = toggleButton.querySelector('i');
-      const textSpan = toggleButton.querySelector('.toggle-text');
+      // <i class="fa-solid fa-eye"></i> <span class="toggle-text">{{ page.show_hidden_items }}</span>
 
-      if (!icon) {
-        console.warn(`Icon element not found in toggle button for category: ${categoryKey}`);
-      }
-
-      if (!textSpan) {
-        console.warn(`Text span element not found in toggle button for category: ${categoryKey}`);
-      }
-
-      if (icon && textSpan) {
-        console.log(`Toggle Button - Icon: ${icon.className}, Text: ${textSpan.textContent}`);
-        if (showHidden) {
-          icon.className = 'fa-solid fa-eye-slash';
-          textSpan.textContent = `{{ page.hide_hidden_items }} (${hiddenCount})`;
-        } else {
-          icon.className = 'fa-solid fa-eye';
-          textSpan.textContent = `{{ page.show_hidden_items }} (${hiddenCount})`;
-        }
+      if (showHidden) {
+        toggleButton.innerHTML = `<i class="fa-solid fa-eye-slash"></i> <span class="toggle-text">{{ page.hide_hidden_items }} (${hiddenCount})</span>`;
+      } else {
+        toggleButton.innerHTML = `<i class="fa-solid fa-eye"></i> <span class="toggle-text">{{ page.show_hidden_items }} (${hiddenCount})</span>`;
       }
     } else {
       toggleButton.style.display = 'none';

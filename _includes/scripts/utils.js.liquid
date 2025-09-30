@@ -166,7 +166,7 @@ window.showHiddenItems = window.showHiddenItems || {};
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/assets/js/sw.js')
     .then(registration => {
-      console.info('Service Worker registered successfully:', registration.scope);
+      // console.info('Service Worker registered successfully:', registration.scope);
     })
     .catch(error => {
       console.error('Service Worker registration failed:', error);
