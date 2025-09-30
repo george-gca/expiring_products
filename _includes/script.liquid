@@ -562,12 +562,23 @@
 
     const expirySettings = ExpiryFilterSettings.getSettings();
 
+    console.log(`Category: ${categoryKey}, Hidden Count: ${hiddenCount}, Show Hidden: ${showHidden}, Expiry Filter Enabled: ${expirySettings.enabled}`);
+
     if (hiddenCount > 0 && expirySettings.enabled) {
       toggleButton.style.display = 'block';
       const icon = toggleButton.querySelector('i');
       const textSpan = toggleButton.querySelector('.toggle-text');
 
+      if (!icon) {
+        console.warn(`Icon element not found in toggle button for category: ${categoryKey}`);
+      }
+
+      if (!textSpan) {
+        console.warn(`Text span element not found in toggle button for category: ${categoryKey}`);
+      }
+
       if (icon && textSpan) {
+        console.log(`Toggle Button - Icon: ${icon.className}, Text: ${textSpan.textContent}`);
         if (showHidden) {
           icon.className = 'fa-solid fa-eye-slash';
           textSpan.textContent = `{{ page.hide_hidden_items }} (${hiddenCount})`;
@@ -661,9 +672,19 @@
 
     // Distant items toggle handlers
     document.addEventListener('click', function(e) {
-      if (e.target.closest('[id$="-distant-items-toggle"]')) {
-        const button = e.target.closest('[id$="-distant-items-toggle"]');
-        const categoryKey = button.getAttribute('data-category');
+      // Check if the clicked element is the toggle button or a child of it
+      let toggleButton = null;
+
+      if (e.target.id && e.target.id.endsWith('-distant-items-toggle')) {
+        // Direct click on the button
+        toggleButton = e.target;
+      } else if (e.target.parentElement && e.target.parentElement.id && e.target.parentElement.id.endsWith('-distant-items-toggle')) {
+        // Click on a child element (icon or span)
+        toggleButton = e.target.parentElement;
+      }
+
+      if (toggleButton) {
+        const categoryKey = toggleButton.getAttribute('data-category');
 
         // Toggle the show hidden state for this category
         window.showHiddenItems[categoryKey] = !window.showHiddenItems[categoryKey];
