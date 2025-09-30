@@ -113,11 +113,50 @@ function filterItems(items, filterBy = 'all') {
 }
 
 /**
+ * Filter items by expiry date distance
+ * @param {Array} items - Array of items to filter
+ * @param {number} monthsThreshold - Number of months threshold
+ * @param {boolean} hideDistant - Whether to hide distant items
+ * @param {boolean} showHidden - Whether to show hidden items (overrides hiding)
+ * @returns {Array} Filtered array of items
+ */
+function filterItemsByExpiryDistance(items, monthsThreshold = 3, hideDistant = true, showHidden = false) {
+  if (!hideDistant || showHidden) {
+    return items;
+  }
+
+  const now = DateTime.now();
+  const thresholdDate = now.plus({ months: monthsThreshold });
+
+  return items.filter(item => {
+    const expiryDate = DateTime.fromISO(item.expiring_date);
+    return expiryDate <= thresholdDate;
+  });
+}
+
+/**
+ * Count items that would be hidden by expiry distance filter
+ * @param {Array} items - Array of items to count
+ * @param {number} monthsThreshold - Number of months threshold
+ * @returns {number} Number of items that would be hidden
+ */
+function countDistantItems(items, monthsThreshold = 3) {
+  const now = DateTime.now();
+  const thresholdDate = now.plus({ months: monthsThreshold });
+
+  return items.filter(item => {
+    const expiryDate = DateTime.fromISO(item.expiring_date);
+    return expiryDate > thresholdDate;
+  }).length;
+}
+
+/**
  * Global storage for current sorting and filtering preferences per category
  */
 window.sortingPreferences = window.sortingPreferences || {};
 window.sortingDirections = window.sortingDirections || {};
 window.filteringPreferences = window.filteringPreferences || {};
+window.showHiddenItems = window.showHiddenItems || {};
 
 // ========================================
 // SERVICE WORKER REGISTRATION
@@ -133,6 +172,72 @@ if ('serviceWorker' in navigator) {
       console.error('Service Worker registration failed:', error);
     });
 }
+
+// ========================================
+// EXPIRY DISTANCE FILTER SETTINGS
+// ========================================
+
+/**
+ * Expiry distance filter settings management
+ */
+const ExpiryFilterSettings = {
+  /**
+   * Get the current expiry filter settings
+   * @returns {Object} Settings object with enabled state and months threshold
+   */
+  getSettings() {
+    const enabled = localStorage.getItem('hideDistantItems') !== 'false'; // Default to true
+    const monthsThreshold = parseInt(localStorage.getItem('expiryThresholdMonths')) || 3;
+    return { enabled, monthsThreshold };
+  },
+
+  /**
+   * Save expiry filter settings
+   * @param {boolean} enabled - Whether to hide distant items
+   * @param {number} monthsThreshold - Number of months threshold
+   */
+  saveSettings(enabled, monthsThreshold) {
+    localStorage.setItem('hideDistantItems', enabled.toString());
+    localStorage.setItem('expiryThresholdMonths', monthsThreshold.toString());
+  },
+
+  /**
+   * Initialize settings controls with saved values
+   */
+  initializeControls() {
+    const settings = this.getSettings();
+
+    const switchElement = document.getElementById('hide-distant-items-switch');
+    const monthsElement = document.getElementById('expiry-threshold-months');
+
+    if (switchElement) {
+      switchElement.checked = settings.enabled;
+    }
+
+    if (monthsElement) {
+      monthsElement.value = settings.monthsThreshold;
+    }
+
+    // Add event listeners
+    if (switchElement) {
+      switchElement.addEventListener('change', () => {
+        this.saveSettings(switchElement.checked, parseInt(monthsElement?.value || 3));
+        if (typeof updateDisplay === 'function') {
+          updateDisplay();
+        }
+      });
+    }
+
+    if (monthsElement) {
+      monthsElement.addEventListener('input', () => {
+        this.saveSettings(switchElement?.checked || true, parseInt(monthsElement.value));
+        if (typeof updateDisplay === 'function') {
+          updateDisplay();
+        }
+      });
+    }
+  }
+};
 
 // ========================================
 // CONFIGURATION

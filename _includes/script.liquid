@@ -180,6 +180,11 @@
 
     // Reveal the content after the logic is complete
     document.body.classList.remove('is-loading');
+
+    // Initialize expiry filter settings
+    setTimeout(() => {
+      ExpiryFilterSettings.initializeControls();
+    }, 100);
   });
 
   async function updateDisplay() {
@@ -252,7 +257,25 @@
         sortItemsBy(itemsObj, sortedItems, sortBy, sortDirection);
 
         // Apply filtering
-        itemsToRender = filterItems(sortedItems, filterBy);
+        let filteredItems = filterItems(sortedItems, filterBy);
+
+        // Apply expiry distance filtering if enabled
+        const expirySettings = ExpiryFilterSettings.getSettings();
+        const showHidden = window.showHiddenItems[categoryKey] || false;
+
+        // Count distant items before filtering for toggle button visibility
+        const distantItemsCount = countDistantItems(filteredItems, expirySettings.monthsThreshold);
+
+        // Update toggle button visibility and text
+        updateDistantItemsToggle(categoryKey, distantItemsCount, showHidden);
+
+        // Apply expiry distance filter
+        itemsToRender = filterItemsByExpiryDistance(
+          filteredItems,
+          expirySettings.monthsThreshold,
+          expirySettings.enabled,
+          showHidden
+        );
       }
 
       if (itemsToRender.length === 0) {
@@ -392,6 +415,11 @@
           <input type="radio" class="btn-check filter-option" name="${categoryKey}-filter" id="${categoryKey}-filter-unopened" data-filter="unopened" data-category="${categoryKey}">
           <label class="btn btn-outline-primary btn-sm" for="${categoryKey}-filter-unopened">{{ page.unopened_items }}</label>
         </div>
+
+        <!-- Show/Hide Distant Items Toggle (hidden in shopping mode) -->
+        <button class="btn btn-outline-info btn-sm" type="button" id="${categoryKey}-distant-items-toggle" style="display: none;" data-category="${categoryKey}">
+          <i class="fa-solid fa-eye"></i> <span class="toggle-text">{{ page.show_hidden_items }}</span>
+        </button>
       </div>
 
       <ul class="list-group list-group-flush list-unstyled mt-3" id="${categoryKey}-list"></ul>
@@ -525,6 +553,34 @@
     });
   }
 
+  // Function to update distant items toggle button
+  function updateDistantItemsToggle(categoryKey, hiddenCount, showHidden) {
+    const toggleButton = document.getElementById(`${categoryKey}-distant-items-toggle`);
+    if (!toggleButton) {
+      return; // Button might not be created yet, that's okay
+    }
+
+    const expirySettings = ExpiryFilterSettings.getSettings();
+
+    if (hiddenCount > 0 && expirySettings.enabled) {
+      toggleButton.style.display = 'block';
+      const icon = toggleButton.querySelector('i');
+      const textSpan = toggleButton.querySelector('.toggle-text');
+
+      if (icon && textSpan) {
+        if (showHidden) {
+          icon.className = 'fa-solid fa-eye-slash';
+          textSpan.textContent = `{{ page.hide_hidden_items }} (${hiddenCount})`;
+        } else {
+          icon.className = 'fa-solid fa-eye';
+          textSpan.textContent = `{{ page.show_hidden_items }} (${hiddenCount})`;
+        }
+      }
+    } else {
+      toggleButton.style.display = 'none';
+    }
+  }
+
   function handleCategorySearch(searchTerm, categoryKey) {
     const listElement = document.getElementById(`${categoryKey}-list`);
     if (!listElement) return;
@@ -602,6 +658,20 @@
         toggleSortingFilteringVisibility(this.checked);
       });
     }
+
+    // Distant items toggle handlers
+    document.addEventListener('click', function(e) {
+      if (e.target.closest('[id$="-distant-items-toggle"]')) {
+        const button = e.target.closest('[id$="-distant-items-toggle"]');
+        const categoryKey = button.getAttribute('data-category');
+
+        // Toggle the show hidden state for this category
+        window.showHiddenItems[categoryKey] = !window.showHiddenItems[categoryKey];
+
+        // Refresh display
+        updateDisplay();
+      }
+    });
   });
 
   // Function to toggle filter visibility based on shopping mode
@@ -610,6 +680,11 @@
       const filterContainer = document.getElementById(`${category.key}-filter-container`);
       if (filterContainer) {
         filterContainer.style.display = isShoppingMode ? 'none' : 'flex';
+      }
+
+      const distantToggle = document.getElementById(`${category.key}-distant-items-toggle`);
+      if (distantToggle) {
+        distantToggle.style.display = isShoppingMode ? 'none' : distantToggle.style.display;
       }
     });
     window.userCategories.forEach(category => {
@@ -620,7 +695,7 @@
     });
   }
 
-  {% include scripts/ui.js.liquid %}
   {% include scripts/utils.js.liquid %}
+  {% include scripts/ui.js.liquid %}
   {% include scripts/db.js.liquid %}
 </script>

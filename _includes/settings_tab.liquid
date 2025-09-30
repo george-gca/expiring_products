@@ -27,6 +27,27 @@
 
       <hr>
 
+      <h5>{{ page.hide_distant_items_label }}</h5>
+      <div class="mb-3">
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" role="switch" id="hide-distant-items-switch" checked>
+          <label class="form-check-label" for="hide-distant-items-switch">{{ page.hide_distant_items_label }}</label>
+        </div>
+        <div class="row mt-2">
+          <div class="col-auto">
+            <label for="expiry-threshold-months" class="form-label">{{ page.hide_distant_items }}</label>
+          </div>
+          <div class="col-auto">
+            <input type="number" class="form-control" id="expiry-threshold-months" min="1" max="12" value="3" style="width: 80px;">
+          </div>
+          <div class="col-auto">
+            <span class="form-label">{{ page.months }}</span>
+          </div>
+        </div>
+      </div>
+
+      <hr>
+
       <div class="settings-actions">
         <div class="d-flex gap-2 flex-wrap">
           <input type="button" id="export-products-input" class="d-none"/>

@@ -41,4 +41,9 @@ sort_by_quantity: Quantidade
 title: Produtos a vencer
 unopened_items: Itens fechados
 view_on_github: Visualizar projeto no GitHub
+hide_distant_items: Esconder itens que vencem em mais de
+hide_distant_items_label: Esconder itens com vencimento distante
+months: meses
+show_hidden_items: Mostrar itens escondidos
+hide_hidden_items: Esconder itens distantes
 ---

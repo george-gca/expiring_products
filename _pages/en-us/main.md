@@ -41,4 +41,9 @@ sort_by_quantity: Quantity
 title: Products to expire
 unopened_items: Unopened items
 view_on_github: View project on GitHub
+hide_distant_items: Hide items expiring in more than
+hide_distant_items_label: Hide distant expiry items
+months: months
+show_hidden_items: Show hidden items
+hide_hidden_items: Hide distant items
 ---
