@@ -46,4 +46,14 @@ sort_by: Sort by
 title: Products to expire
 unopened_items: Unopened items
 view_on_github: View project on GitHub
+enable_notifications: Enable notifications
+notifications_label: Push Notifications
+notifications_description: Get notified when products are about to expire (5 days or less)
+notification_permission_denied: Notification permission was denied. Please enable it in your browser settings.
+notification_permission_granted: Notifications enabled successfully!
+products_expiring_soon: Products Expiring Soon
+product_expires_in: expires in
+product_expired: expired
+days: days
+day: day
 ---

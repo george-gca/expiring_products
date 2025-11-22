@@ -374,3 +374,280 @@ function checkExpiryDates() {
 }
 
 everyDay(checkExpiryDates);
+
+// ========================================
+// PUSH NOTIFICATIONS
+// ========================================
+
+/**
+ * Notification management utilities
+ */
+const NotificationManager = {
+  /**
+   * Check if notifications are supported in the browser
+   * @returns {boolean} True if notifications are supported
+   */
+  isSupported() {
+    return 'Notification' in window && 'serviceWorker' in navigator;
+  },
+
+  /**
+   * Get the current notification permission status
+   * @returns {string|null} Permission status or null if not supported
+   */
+  getPermissionStatus() {
+    if (!this.isSupported()) return null;
+    return Notification.permission;
+  },
+
+  /**
+   * Request notification permission from the user
+   * @returns {Promise<string>} Promise that resolves with the permission status
+   */
+  async requestPermission() {
+    if (!this.isSupported()) {
+      throw new Error('Notifications are not supported in this browser');
+    }
+
+    if (Notification.permission === 'granted') {
+      return 'granted';
+    }
+
+    const permission = await Notification.permission === 'default' 
+      ? Notification.requestPermission() 
+      : Notification.permission;
+
+    return permission;
+  },
+
+  /**
+   * Get notification preferences from localStorage
+   * @returns {Object} Notification preferences
+   */
+  getPreferences() {
+    const enabled = localStorage.getItem('notificationsEnabled') === 'true';
+    const lastCheck = localStorage.getItem('lastNotificationCheck');
+    return { enabled, lastCheck };
+  },
+
+  /**
+   * Save notification preferences to localStorage
+   * @param {boolean} enabled - Whether notifications are enabled
+   */
+  savePreferences(enabled) {
+    localStorage.setItem('notificationsEnabled', enabled.toString());
+  },
+
+  /**
+   * Update the last notification check timestamp
+   */
+  updateLastCheck() {
+    localStorage.setItem('lastNotificationCheck', new Date().toISOString());
+  },
+
+  /**
+   * Check for items expiring within the specified number of days
+   * @param {number} daysThreshold - Number of days to check (default: 5)
+   * @returns {Array} Array of items expiring soon
+   */
+  getExpiringItems(daysThreshold = 5) {
+    const expiringItems = [];
+    const now = DateTime.now();
+    const thresholdDate = now.plus({ days: daysThreshold });
+
+    if (!window.userCategories || !window.itemsByCategory) {
+      return expiringItems;
+    }
+
+    window.userCategories.forEach(category => {
+      const categoryItems = window.itemsByCategory[category.key];
+      
+      if (categoryItems) {
+        Object.values(categoryItems).forEach(item => {
+          const expiryDate = DateTime.fromISO(item.expiring_date);
+          
+          // Check if item expires within threshold and hasn't expired yet
+          if (expiryDate <= thresholdDate && expiryDate >= now.startOf('day')) {
+            const daysUntilExpiry = Math.ceil(expiryDate.diff(now, 'days').days);
+            expiringItems.push({
+              ...item,
+              daysUntilExpiry,
+              categoryName: category.name
+            });
+          }
+        });
+      }
+    });
+
+    // Sort by expiry date (soonest first)
+    expiringItems.sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
+
+    return expiringItems;
+  },
+
+  /**
+   * Show a notification for expiring products
+   * @param {Array} items - Array of items to notify about
+   * @returns {Promise} Promise that resolves when notification is shown
+   */
+  async showExpiringNotification(items) {
+    if (!this.isSupported() || items.length === 0) {
+      return;
+    }
+
+    const preferences = this.getPreferences();
+    if (!preferences.enabled || Notification.permission !== 'granted') {
+      return;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+
+    // Group items by days until expiry
+    const expiredItems = items.filter(item => item.daysUntilExpiry <= 0);
+    const expiringToday = items.filter(item => item.daysUntilExpiry === 0);
+    const expiringTomorrow = items.filter(item => item.daysUntilExpiry === 1);
+    const expiringLater = items.filter(item => item.daysUntilExpiry > 1);
+
+    // Create notification body
+    let body = '';
+    const maxItemsToShow = 5;
+
+    if (expiredItems.length > 0) {
+      const itemsList = expiredItems.slice(0, maxItemsToShow).map(item => `• ${item.name}`).join('\n');
+      body += `{{ page.product_expired | capitalize }}: ${expiredItems.length}\n${itemsList}`;
+      if (expiredItems.length > maxItemsToShow) {
+        body += `\n...and ${expiredItems.length - maxItemsToShow} more`;
+      }
+    } else if (expiringToday.length > 0) {
+      const itemsList = expiringToday.slice(0, maxItemsToShow).map(item => `• ${item.name}`).join('\n');
+      body += `{{ page.expire_in }} today: ${expiringToday.length}\n${itemsList}`;
+      if (expiringToday.length > maxItemsToShow) {
+        body += `\n...and ${expiringToday.length - maxItemsToShow} more`;
+      }
+    } else if (expiringTomorrow.length > 0) {
+      const itemsList = expiringTomorrow.slice(0, maxItemsToShow).map(item => `• ${item.name}`).join('\n');
+      body += `{{ page.expire_in }} tomorrow: ${expiringTomorrow.length}\n${itemsList}`;
+      if (expiringTomorrow.length > maxItemsToShow) {
+        body += `\n...and ${expiringTomorrow.length - maxItemsToShow} more`;
+      }
+    } else {
+      const itemsList = expiringLater.slice(0, maxItemsToShow).map(item => {
+        const dayText = item.daysUntilExpiry === 1 ? '{{ page.day }}' : '{{ page.days }}';
+        return `• ${item.name} (${item.daysUntilExpiry} ${dayText})`;
+      }).join('\n');
+      body += `{{ page.products_expiring_soon }}:\n${itemsList}`;
+      if (expiringLater.length > maxItemsToShow) {
+        body += `\n...and ${expiringLater.length - maxItemsToShow} more`;
+      }
+    }
+
+    // Show notification
+    await registration.showNotification('{{ page.products_expiring_soon }}', {
+      body: body,
+      icon: '/assets/img/favicon_colored.png',
+      badge: '/assets/img/favicon.png',
+      tag: 'expiring-products',
+      requireInteraction: false,
+      vibrate: [200, 100, 200],
+      data: { url: '/' }
+    });
+
+    this.updateLastCheck();
+  },
+
+  /**
+   * Check for expiring items and show notification if needed
+   * Should be called daily or when user enables notifications
+   * @param {boolean} force - Force notification even if checked recently
+   */
+  async checkAndNotify(force = false) {
+    const preferences = this.getPreferences();
+    
+    if (!preferences.enabled || Notification.permission !== 'granted') {
+      return;
+    }
+
+    // Check if we already checked today (unless forced)
+    if (!force && preferences.lastCheck) {
+      const lastCheck = DateTime.fromISO(preferences.lastCheck);
+      const now = DateTime.now();
+      
+      if (lastCheck.hasSame(now, 'day')) {
+        // Already checked today, skip
+        return;
+      }
+    }
+
+    const expiringItems = this.getExpiringItems(5);
+    
+    if (expiringItems.length > 0) {
+      await this.showExpiringNotification(expiringItems);
+    }
+  },
+
+  /**
+   * Initialize notification controls in the settings
+   */
+  initializeControls() {
+    const notificationSwitch = document.getElementById('enable-notifications-switch');
+    
+    if (!notificationSwitch) return;
+
+    // Check if notifications are supported
+    if (!this.isSupported()) {
+      notificationSwitch.disabled = true;
+      notificationSwitch.parentElement.innerHTML += '<br><small class="text-danger">Notifications are not supported in this browser</small>';
+      return;
+    }
+
+    // Load current preferences
+    const preferences = this.getPreferences();
+    const currentPermission = this.getPermissionStatus();
+
+    // Set switch state based on both preference and permission
+    notificationSwitch.checked = preferences.enabled && currentPermission === 'granted';
+
+    // Add event listener
+    notificationSwitch.addEventListener('change', async () => {
+      if (notificationSwitch.checked) {
+        try {
+          const permission = await this.requestPermission();
+          
+          if (permission === 'granted') {
+            this.savePreferences(true);
+            alert('{{ page.notification_permission_granted }}');
+            
+            // Check and send notification immediately if there are expiring items
+            await this.checkAndNotify(true);
+          } else {
+            // Permission denied or dismissed
+            notificationSwitch.checked = false;
+            this.savePreferences(false);
+            alert('{{ page.notification_permission_denied }}');
+          }
+        } catch (error) {
+          console.error('Error requesting notification permission:', error);
+          notificationSwitch.checked = false;
+          this.savePreferences(false);
+        }
+      } else {
+        // User disabled notifications
+        this.savePreferences(false);
+      }
+    });
+  }
+};
+
+/**
+ * Daily task to check expiring items and send notifications
+ */
+async function checkExpiringItemsForNotification() {
+  try {
+    await NotificationManager.checkAndNotify();
+  } catch (error) {
+    console.error('Error checking expiring items for notification:', error);
+  }
+}
+
+// Schedule daily notification check
+everyDay(checkExpiringItemsForNotification);

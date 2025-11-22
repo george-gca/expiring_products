@@ -74,6 +74,45 @@ Click the **Forgot Password?** link on the login screen and follow the instructi
 
 6. Enjoy!
 
+## Push Notifications
+
+The app can send you notifications when products are about to expire (within 5 days). This feature helps you stay on top of your pantry items and avoid wasting food.
+
+### Enabling Notifications
+
+1. Open the app and navigate to the **Options** tab
+2. Find the **Push Notifications** section
+3. Toggle the **Enable notifications** switch
+4. Allow notification permission when prompted by your browser
+
+![Enable notifications](./readme_img/enable_notifications.png)
+
+### How It Works
+
+- Notifications are checked **daily at midnight**
+- You'll receive a notification if you have products expiring in 5 days or less
+- The notification shows:
+  - Number of products expiring
+  - List of product names (up to 5 items)
+  - Days until expiration
+- Clicking the notification opens the app
+
+### Browser Support
+
+Push notifications work on most modern browsers:
+
+- ✅ Chrome (Desktop & Android)
+- ✅ Firefox (Desktop & Android)
+- ✅ Edge (Desktop)
+- ✅ Safari (macOS 16.4+, iOS 16.4+)
+- ✅ Opera (Desktop & Android)
+
+**Note:** Notification behavior may vary depending on your device's settings and browser configuration.
+
+### Privacy
+
+All notifications are generated **locally on your device**. No data is sent to external servers. The notification system uses the browser's built-in Notification API and Service Worker.
+
 ## TODO
 
 - Statistics tab with consumption and waste analytics

@@ -48,6 +48,17 @@
 
       <hr>
 
+      <h5>{{ page.notifications_label }}</h5>
+      <div class="mb-3">
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" role="switch" id="enable-notifications-switch">
+          <label class="form-check-label" for="enable-notifications-switch">{{ page.enable_notifications }}</label>
+        </div>
+        <small class="text-muted">{{ page.notifications_description }}</small>
+      </div>
+
+      <hr>
+
       <div class="settings-actions">
         <div class="d-flex gap-2 flex-wrap">
           <input type="button" id="export-products-input" class="d-none"/>

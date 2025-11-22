@@ -46,4 +46,14 @@ sort_by: Ordenar por
 title: Produtos a vencer
 unopened_items: Itens fechados
 view_on_github: Visualizar projeto no GitHub
+enable_notifications: Ativar notificações
+notifications_label: Notificações Push
+notifications_description: Receba notificações quando produtos estiverem prestes a vencer (5 dias ou menos)
+notification_permission_denied: Permissão de notificação negada. Por favor, ative nas configurações do navegador.
+notification_permission_granted: Notificações ativadas com sucesso!
+products_expiring_soon: Produtos Vencendo em Breve
+product_expires_in: vence em
+product_expired: vencido
+days: dias
+day: dia
 ---

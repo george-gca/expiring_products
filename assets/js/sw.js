@@ -3,7 +3,7 @@
  * Provides offline functionality and asset caching
  */
 
-const CACHE_NAME = "expiring-products-v2";
+const CACHE_NAME = "expiring-products-v3";
 const CACHE_STATIC_NAME = `${CACHE_NAME}-static`;
 const CACHE_DYNAMIC_NAME = `${CACHE_NAME}-dynamic`;
 
@@ -127,6 +127,67 @@ self.addEventListener("fetch", (event) => {
           // Could return a fallback page here for navigation requests
           throw error;
         });
+    })
+  );
+});
+
+/**
+ * Handle notification click events
+ * Opens the app when user clicks on a notification
+ */
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  event.waitUntil(
+    clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        // If a window is already open, focus it
+        for (const client of clientList) {
+          if ("focus" in client) {
+            return client.focus();
+          }
+        }
+        // Otherwise, open a new window
+        if (clients.openWindow) {
+          return clients.openWindow("/");
+        }
+      })
+  );
+});
+
+/**
+ * Handle push events
+ * Displays notification when a push message is received
+ */
+self.addEventListener("push", (event) => {
+  let notificationData = {
+    title: "Products Expiring Soon",
+    body: "You have products about to expire",
+    icon: "/assets/img/favicon_colored.png",
+    badge: "/assets/img/favicon.png",
+    tag: "expiring-products",
+    requireInteraction: false,
+  };
+
+  if (event.data) {
+    try {
+      const data = event.data.json();
+      notificationData = { ...notificationData, ...data };
+    } catch (e) {
+      console.error("Error parsing push data:", e);
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(notificationData.title, {
+      body: notificationData.body,
+      icon: notificationData.icon,
+      badge: notificationData.badge,
+      tag: notificationData.tag,
+      requireInteraction: notificationData.requireInteraction,
+      vibrate: [200, 100, 200],
+      data: notificationData.data || {},
     })
   );
 });
