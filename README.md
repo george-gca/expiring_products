@@ -1,53 +1,127 @@
 # Expiring Products
 
-A simple web app to help controlling expiring products in my pantry. It uses [IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API) as a local database in the browser and [Web Storage](https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API) to store history information for statistics purposes. It can also be installed locally as a [Progressive web app](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps).
+[![Netlify Status](https://api.netlify.com/api/v1/badges/your-badge-id/deploy-status)](https://expiring-products.netlify.app/)
 
-Since all information is stored locally, one can simply open the [web application](https://expiring-products.netlify.app/) and start using it. As long as the browser data for this site is not deleted, all the information will be there. If, for any reason, you want to delete your browser history, you can export your database as a JSON file and later import it again.
+A smart, offline-first web application to track and manage expiring products in your pantry and medicine cabinet. Built as a Progressive Web App (PWA) with multilingual support (Portuguese and English), it runs entirely in your browser with no server or account required.
+
+**🌐 Live Demo:** [expiring-products.netlify.app](https://expiring-products.netlify.app/)
+
+## Why Use This?
+
+- **🔒 Privacy-First:** All data stays in your browser using IndexedDB
+- **📱 Works Offline:** Install as a PWA and use without internet
+- **🌍 Multilingual:** Full support for Portuguese (pt-br) and English (en-us)
+- **⚡ Smart Tracking:** Automatic expiration warnings and intelligent sorting
+- **💾 Backup Ready:** Export/import your data as JSON anytime
+- **🎯 No Login Required:** Start using immediately, no account needed
+
+## Quick Start
+
+1. Visit [expiring-products.netlify.app](https://expiring-products.netlify.app/)
+2. Click the "+" button to add your first product
+3. Enter product name, quantity, and expiration date
+4. Optional: Set "duration after opened" for items that expire quickly after opening
+
+Your data is automatically saved in your browser and persists across sessions.
 
 ## Features
 
-- Add products with name, expiration date, and quantity
-- Mark products as opened, consumed, or discarded
-- Products are sorted by closest to expiration date and then by larger quantity
-- After a product is opened, its expiration date is updated based on the duration days from the opening date
-- Export database as JSON file
-- Import database from JSON file
-- Install as a Progressive Web App
-- Responsive design
+### Core Functionality
 
-## Installing on your local machine
+- **Product Management**
 
-1. Click on the install icon on the right side of the address bar
+  - Add items with name, quantity, and expiration date
+  - Separate tabs for Foods and Medicines
+  - Auto-complete from product history with saved duration values
+  - Mark items as opened, consumed, or discarded
 
-![Install as PWA](./readme_img/install_pwa_desktop.png)
+- **Smart Expiration Tracking**
 
-2. Confirm installation
+  - Items sorted by expiration date (closest first), then by quantity
+  - Visual warnings: Red for expired items, yellow for items expiring within 3 days
+  - Automatic expiration date update when items are opened (based on "duration after opened")
+  - Daily automatic checks for expired items
 
-![Confirm installation](./readme_img/install_pwa_desktop_confirmation.png)
+- **Data Management**
 
-3. Open the app from the installed icon
+  - Export entire database as JSON file
+  - Import previously exported data
+  - Local storage using IndexedDB (no server required)
+  - Product history tracking for quick re-entry
 
-<img src="./assets/img/favicon.png" alt="favicon" width="64"/>
+- **Progressive Web App**
 
-## Installing on your mobile device
+  - Install on desktop and mobile devices
+  - Works completely offline
+  - Responsive Bootstrap 5 + MDB UI Kit design
+  - Service worker caching for performance
 
-1. Open the [web application](https://expiring-products.netlify.app/) on your mobile browser
-2. Click on the three dots menu on the right side of the address bar
-3. Click on "Add to Home screen"
+- **Multilingual Support**
+  - Portuguese (pt-br) - default
+  - English (en-us)
+  - Easy language switching in settings
 
-<img src="./readme_img/install_pwa_mobile.jpg" alt="Add to home screen" width="256"/>
+## Installing as PWA
 
-4. Confirm installation
+Install the app on your device for offline access and a native app experience. Click the install icon in your browser's address bar (desktop) or use "Add to Home screen" from the browser menu (mobile).
 
-<img src="./readme_img/install_pwa_mobile_confirmation.jpg" alt="Confirm installation" width="256"/>
+![Desktop Installation](./readme_img/install_pwa_desktop.png)
+![Mobile Installation](./readme_img/install_pwa_mobile.jpg)
 
-5. Open the app from the installed icon
+For detailed installation steps, see the [USER_GUIDE.md](USER_GUIDE.md#installing-as-an-app).
 
-<img src="./readme_img/pwa_mobile_icon.jpg" alt="App icon" width="256"/>
+## Technology Stack
 
-6. Enjoy!
+- **Jekyll** + Liquid templating - Static site generation
+- **Bootstrap 5.3.3** + MDB UI Kit 8.0.0 - UI framework
+- **Luxon 3.5.0** - Date/time manipulation
+- **IndexedDB** - Client-side data storage
+- **Service Worker** - Offline functionality
+- **Jekyll Polyglot** - Multi-language support
 
-## TODO
+## Project Structure
 
-- statistics tab
-- improve UI
+```text
+├── _includes/          # Liquid partials and embedded JavaScript
+│   ├── scripts/        # Core application logic (db, ui, utils)
+│   └── *.liquid        # UI components (modals, tabs)
+├── _layouts/           # Page layouts
+├── _pages/             # Multilingual content (en-us, pt-br)
+├── assets/             # Images, JS, service worker
+└── _config.yml         # Jekyll configuration
+```
+
+## For Developers
+
+Want to contribute or run locally? See **[DEVELOPMENT.md](DEVELOPMENT.md)** for setup instructions, contribution guidelines, and coding standards.
+
+## Documentation
+
+- **[USER_GUIDE.md](USER_GUIDE.md)** - Complete user manual
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Developer setup and contribution guide
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Technical architecture details
+
+## Browser Compatibility
+
+Requires modern browsers with IndexedDB, Service Workers, and ES6+ JavaScript support.
+Tested on Chrome and Firefox (latest versions).
+
+## Privacy & Data
+
+All data is stored locally in your browser's IndexedDB.
+No information is sent to external servers.
+Export your data anytime from the Settings tab.
+
+## License
+
+See [LICENSE](LICENSE) file for details.
+
+## Author
+
+Created by [George](https://github.com/george-gca)
+
+## Acknowledgments
+
+- [Bootstrap](https://getbootstrap.com/) & [MDB UI Kit](https://mdbootstrap.com/) - UI components
+- [Luxon](https://moment.github.io/luxon/) - Date/time library
+- [IndexedDB Backup/Restore utilities](https://gist.github.com/loilo/ed43739361ec718129a15ae5d531095b)
