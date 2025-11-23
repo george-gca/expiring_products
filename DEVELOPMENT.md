@@ -53,7 +53,45 @@ Install Node.js packages:
 npm install
 ```
 
-### 3. Verify Installation
+### 3. Configure Firebase
+
+Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com):
+
+1. Click "Add project" and follow the setup wizard
+2. Enable **Firestore Database** in Build > Firestore Database
+3. Enable **Authentication** in Build > Authentication > Sign-in method > Email/Password
+4. Get your Firebase config from Project Settings > General > Your apps > Web app
+
+Create a `.env` file in the project root:
+
+```bash
+FIREBASE_API_KEY=your_api_key_here
+FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+FIREBASE_PROJECT_ID=your_project_id
+FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+FIREBASE_APP_ID=your_app_id
+```
+
+**Important**: Never commit the `.env` file to version control. It's already in `.gitignore`.
+
+### 4. Configure Firestore Security Rules
+
+In Firebase Console > Firestore Database > Rules, set:
+
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can only access their own data
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
+```
+
+### 5. Verify Installation
 
 Check that Jekyll is installed correctly:
 
@@ -81,9 +119,9 @@ bundle exec jekyll --version
 
 **Data Layer:**
 
-- IndexedDB - Client-side database
-- Web Storage API - Statistics tracking
-- Firebase 12.3.0 - Optional cloud sync (configured separately)
+- Firebase Firestore 9.6.7 - Cloud NoSQL database with real-time sync
+- Firebase Authentication 9.6.7 - User authentication and management
+- Fuse.js 7.1.0 - Fuzzy search functionality
 
 **PWA Features:**
 
@@ -121,7 +159,7 @@ expiring_products/
 ├── assets/
 │   ├── img/               # Images and icons
 │   └── js/
-│       ├── idb-backup-and-restore.mjs
+│       ├── backup-and-restore-data.mjs  # Firestore export/import
 │       └── sw.js          # Service worker
 ├── readme_img/            # Documentation images
 ├── _site/                 # Generated site (gitignored)
@@ -185,15 +223,33 @@ Output is placed in `_site/` directory.
 
 ### Testing Checklist
 
-- [ ] Add new item (foods and medicines)
+- [ ] User authentication (sign up, login, logout)
+- [ ] Password reset functionality
+- [ ] Add new item (multiple categories)
+- [ ] Create custom category with emoji
+- [ ] Edit and delete categories
 - [ ] Edit item quantities
 - [ ] Mark items as opened/consumed/discarded
 - [ ] Visual warnings for expiring/expired items
+- [ ] Shopping mode with recurring items
+- [ ] Search functionality per category
+- [ ] Sort by date/name/quantity
+- [ ] Filter by opened/unopened status
 - [ ] Export database to JSON
 - [ ] Import database from JSON
 - [ ] Language switching
-- [ ] Offline functionality (service worker)
+- [ ] Real-time sync across browser tabs
 - [ ] PWA installation
+
+### Multi-Device Testing
+
+Test data synchronization:
+
+1. Login on Device A, add items
+2. Login with same account on Device B
+3. Verify items appear automatically
+4. Edit item on Device B
+5. Verify changes appear on Device A in real-time
 
 ### Browser Testing
 
@@ -205,11 +261,11 @@ Test in:
 
 Required browser features:
 
-- IndexedDB API
+- Firebase SDK support (modern browsers)
 - Service Workers
 - ES6+ JavaScript
 - Fetch API
-- LocalStorage
+- LocalStorage (for user preferences)
 
 ### Validating Markdown
 
@@ -242,7 +298,14 @@ Jekyll build steps:
 For production deployment, configure:
 
 - `JEKYLL_ENV=production` - Enables optimizations
-- Firebase credentials (if using cloud sync)
+- `FIREBASE_API_KEY` - Firebase API key
+- `FIREBASE_AUTH_DOMAIN` - Firebase auth domain
+- `FIREBASE_PROJECT_ID` - Firebase project ID
+- `FIREBASE_STORAGE_BUCKET` - Firebase storage bucket
+- `FIREBASE_MESSAGING_SENDER_ID` - Firebase messaging sender ID
+- `FIREBASE_APP_ID` - Firebase app ID
+
+These can be set via `.env` file (for local development) or environment variables in your hosting platform.
 
 ### Deployment to Netlify
 
@@ -252,6 +315,12 @@ The project is configured for Netlify deployment:
 2. Build command: `bundle exec jekyll build`
 3. Publish directory: `_site`
 4. Environment: Ruby 2.7+, Node.js 14+
+5. Environment variables: Add all `FIREBASE_*` variables in Netlify dashboard
+
+**Important**: Set Firebase environment variables in Netlify:
+
+- Go to Site settings > Build & deploy > Environment
+- Add each `FIREBASE_*` variable with values from your Firebase project
 
 ### Service Worker Updates
 
@@ -319,29 +388,33 @@ function doSort(a, b, x) { ... }
 
 1. Create Liquid include for UI (if needed) in `_includes/`
 2. Add JavaScript logic to appropriate script file
-3. Update IndexedDB schema if storing new data
-4. Test in both languages
-5. Update documentation
-6. Update service worker cache if needed
+3. Update Firestore data structure if storing new data
+4. Update Firestore security rules if needed
+5. Test with real-time sync across multiple tabs/devices
+6. Test in both languages
+7. Update documentation
+8. Update service worker cache if needed
 
-### Modifying IndexedDB Schema
+### Modifying Data Schema
 
 To add a new field to items:
 
-1. Update schema in `_includes/scripts/db.js.liquid`:
+1. Update document structure in `_includes/scripts/db.js.liquid`:
 
    ```javascript
-   foodsObjectStore.createIndex("new_field", "new_field", { unique: false });
+   addData({
+     name: nameInput.value,
+     category: category,
+     quantity: quantityInput.value,
+     new_field: newFieldInput.value, // Add new field
+     // ... other fields
+   });
    ```
 
-2. Increment database version:
-
-   ```javascript
-   const openRequest = window.indexedDB.open("expiring_dates_db", 2); // Increment
-   ```
-
-3. Handle migration in `upgradeneeded` event
-4. Update export/import logic in `assets/js/idb-backup-and-restore.mjs`
+2. Update Firestore security rules if the new field requires validation
+3. Handle migration for existing data (if needed) via a one-time import/export
+4. Update export/import logic in `assets/js/backup-and-restore-data.mjs`
+5. Test real-time listener updates with the new field
 
 ### Updating Dependencies
 
@@ -376,16 +449,19 @@ bundle exec jekyll build --trace
 **JavaScript Debugging:**
 
 - Use browser DevTools Console
-- Check IndexedDB in Application tab
-- Monitor Network tab for service worker
+- Check Firestore data in Firebase Console
+- Monitor Network tab for Firebase API calls
 - Check Service Worker status in Application > Service Workers
+- Use Firebase Emulator Suite for local testing (optional)
 
 **Common Issues:**
 
-- **IndexedDB not opening**: Check browser compatibility
+- **Firestore permission denied**: Check security rules and user authentication
+- **Data not syncing**: Verify internet connection and Firebase configuration
 - **Service worker not updating**: Clear cache or hard reload (Ctrl+Shift+R)
 - **Build fails**: Check Ruby/gem versions with `bundle exec jekyll doctor`
 - **Polyglot issues**: Ensure all language pages have same frontmatter keys
+- **Firebase quota exceeded**: Check Firebase Console > Usage and billing
 
 ## Performance Optimization
 
@@ -400,14 +476,18 @@ bundle exec jekyll build --trace
 - Lazy load images
 - Minimize DOM manipulations
 - Use event delegation
-- Cache IndexedDB queries
+- Optimize Firestore queries with proper indexes
+- Use real-time listeners efficiently (unsubscribe when not needed)
 - Optimize service worker cache strategy
+- Use Firestore transactions only when necessary (they're slower than regular writes)
 
 ## Getting Help
 
 - Check [Jekyll documentation](https://jekyllrb.com/docs/)
-- Review [IndexedDB API docs](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API)
+- Review [Firebase Firestore documentation](https://firebase.google.com/docs/firestore)
+- Review [Firebase Authentication documentation](https://firebase.google.com/docs/auth)
 - See [Luxon documentation](https://moment.github.io/luxon/)
+- See [Fuse.js documentation](https://fusejs.io/)
 - Open an issue on GitHub for bugs
 
 ## Contributing

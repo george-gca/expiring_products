@@ -4,15 +4,15 @@ Technical architecture and design decisions for the Expiring Products applicatio
 
 ## Overview
 
-Expiring Products is a client-side web application using static site generation.
-The architecture is serverless and offline-first with all data stored locally in the browser.
+Expiring Products is a client-side web application using static site generation with cloud-based data storage.
+The architecture follows a serverless model with Firebase providing authentication and real-time database services.
 
 ### Key Principles
 
-1. **Offline-First**: Works without internet connectivity
-2. **Privacy-Focused**: No server-side data storage or tracking
+1. **Cloud-First**: Data stored in Firebase Firestore with real-time synchronization
+2. **Privacy-Focused**: User data is isolated and accessible only to authenticated users
 3. **Static Generation**: Pre-rendered HTML for fast initial load
-4. **Client-Side Data**: IndexedDB for structured data persistence
+4. **Real-Time Sync**: Automatic data synchronization across all devices
 
 ## Architecture Patterns
 
@@ -28,118 +28,203 @@ The architecture is serverless and offline-first with all data stored locally in
 - No page reloads, dynamic DOM updates
 - Client-side tab navigation
 - In-memory state management
-- No server communication after initial load
+- Real-time data updates via Firestore listeners
 
-**Offline-First**:
+**Progressive Web App**:
 
 - Service Worker caches app shell and assets
-- IndexedDB persists all user data locally
-- All libraries cached locally
-- Optional Firebase sync when online
+- Offline access to cached interface
+- Firebase Firestore provides online data persistence
+- Automatic sync when connection is restored
 
 ## Data Layer
 
-### IndexedDB Schema
+### Firebase Firestore Schema
 
-IndexedDB stores all product data with the following object stores:
+Firebase Firestore provides the cloud database with real-time synchronization. Data is organized in a hierarchical structure per user.
 
-#### Foods Table (`foods_table`)
+#### Users Collection
+
+Root collection containing user documents, each identified by Firebase Authentication UID.
+
+```text
+users/{userId}/
+  ├── categories/       # User's custom categories
+  ├── items/            # All items across categories
+  ├── item_history/     # Autocomplete suggestions
+  └── statistics/       # Consumption and waste stats
+```
+
+#### Categories Subcollection (`users/{userId}/categories`)
+
+Stores user-defined product categories with custom names and emojis.
 
 ```javascript
 {
-  keyPath: "id",           // Auto-incrementing primary key
-  autoIncrement: true
+  key: "foods",              // Unique identifier (lowercase, underscores)
+  name: "Foods",             // Display name
+  emoji: "🍎",              // Category icon
+  order: 0                   // Sort order in tabs
 }
 ```
 
-Fields:
+Default categories: Foods, Medicines (created on first use)
 
-- `id` (number) - Auto-generated unique identifier
-- `name` (string) - Product name
-- `quantity` (number) - Current quantity
-- `expiring_date` (ISO string) - Expiration date
-- `duration` (number) - Days until expiration after opening
-- `date_opened` (ISO string | null) - Date when product was opened
-- `opened` (boolean) - Whether product has been opened
+#### Items Subcollection (`users/{userId}/items`)
 
-Indexes:
-
-- `name` - Fast lookup by product name
-- `quantity` - Sorting by quantity
-- `expiring_date` - Sorting by expiration
-- `duration` - History tracking
-- `date_opened` - Track opening dates
-- `opened` - Filter opened items
-
-#### Medicines Table (`medicines_table`)
-
-Identical schema to Foods Table.
-
-#### History Tables (`foods_history_table`, `medicines_history_table`)
+Stores all product items with category association.
 
 ```javascript
 {
-  keyPath: "name",         // Product name as primary key
-  autoIncrement: false
+  name: "Whole Milk",                    // Product name
+  category: "foods",                     // Category key reference
+  quantity: 2,                           // Current quantity
+  expiring_date: "2026-01-15T23:59:59",  // ISO 8601 expiration date
+  duration: 7,                           // Days until expiration after opening
+  date_opened: "2025-11-23T10:30:00",    // ISO 8601 date when opened (null if unopened)
+  opened: false,                         // Boolean: has been opened
+  recurring: true                        // Boolean: recurring purchase for shopping mode
 }
 ```
 
-Fields: `name` (string), `duration` (number)
+Firestore Indexes:
 
-Purpose: Auto-complete suggestions with remembered duration values.
+- `category` + `expiring_date` (ascending) - For sorted category lists
+- `category` (for filtering by category)
 
-### LocalStorage
+#### Item History Subcollection (`users/{userId}/item_history`)
 
-Stores statistics for future analytics:
+Stores autocomplete suggestions with remembered duration values.
 
-- `consumed_items`, `consumed_expired_items`
-- `expired_discarded_items`, `expired_unopened_items`, `expired_opened_items`
+```javascript
+{
+  // Document ID: {category}_{name} (composite key)
+  name: "Whole Milk",        // Product name
+  category: "foods",          // Category key
+  duration: "7",              // Remembered duration
+  recurring: true             // Whether it's a recurring purchase
+}
+```
 
-### Data Export/Import
+Purpose: Provide autocomplete suggestions when adding new items, pre-filling duration and recurring status.
 
-JSON export/import via `assets/js/idb-backup-and-restore.mjs`:
+#### Statistics Subcollection (`users/{userId}/statistics`)
 
-- Export: Iterate stores with cursors → serialize to JSON → downloadable Blob
-- Import: Parse JSON → clear database → insert records → refresh UI
+Single document (`stats`) tracking consumption and waste metrics per category.
+
+```javascript
+{
+  // Dynamic fields based on categories
+  foods_consumed_items: 45,
+  foods_consumed_expired_items: 3,
+  foods_discarded_items: 2,
+  foods_expired_discarded_items: 5,
+  foods_expired_opened_items: 1,
+  medicines_consumed_items: 12,
+  // ... more category-specific stats
+}
+```
+
+Stats are incremented atomically using `firebase.firestore.FieldValue.increment()`.
+
+### Data Operations
+
+**Real-Time Listeners**:
+
+- Each category has a dedicated Firestore listener
+- Listeners automatically update UI when data changes
+- Changes from other devices appear instantly
+- Sorted queries executed server-side for efficiency
+
+**Transactions**:
+
+- Opening items uses transactions to prevent race conditions
+- Ensures atomic updates when splitting item quantities
+- Guarantees data consistency across concurrent operations
+
+**Batch Operations**:
+
+- Import/export use batched writes for efficiency
+- Database clearing performed in batches
 
 ## Application Layer
 
 JavaScript split across three files:
 
-**`db.js.liquid`** - IndexedDB operations:
+**`db.js.liquid`** - Firestore operations:
 
-- `addData()`, `editData()`, `deleteData()`, `displayData()`
-- Database lifecycle: open → upgradeneeded → success
+- `addData()`, `editData()`, `deleteData()` - CRUD operations
+- `setupRealtimeListener()` - Real-time data synchronization
+- `setupCategoriesListener()` - Category management
+- `addHistoryData()` - Autocomplete history tracking
+- Real-time listeners update UI automatically on data changes
 
 **`ui.js.liquid`** - Event handlers:
 
 - Modal events, form submissions, data import/export
-- `openItem()`, `consumeItem()`, `discardItem()`
+- `openItem()`, `consumeItem()`, `discardItem()` - Item actions with Firestore transactions
+- Authentication event handlers (login, signup, logout, password reset)
+- Category management (add, edit, delete categories)
+- Shopping mode functionality
 
 **`utils.js.liquid`** - Utilities:
 
-- `sortItems()` - Multi-key sorting
+- `sortItems()`, `sortItemsBy()` - Multi-key sorting with configurable criteria
+- `filterItems()`, `filterItemsByExpiryDistance()` - Filtering logic
 - `checkExpiryDates()` - Visual warnings
 - Service Worker registration
+- Error handling utilities
+
+### Authentication Flow
+
+```javascript
+// Firebase Authentication initialization
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+let currentUser;
+
+// Authentication state observer
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    // User signed in: show app, setup listeners
+    currentUser = user;
+    setupCategoriesListener();
+  } else {
+    // User signed out: show login, cleanup listeners
+    currentUser = null;
+  }
+});
+```
+
+**Sign Up**: `auth.createUserWithEmailAndPassword(email, password)`
+**Sign In**: `auth.signInWithEmailAndPassword(email, password)`
+**Sign Out**: `auth.signOut()`
+**Password Reset**: `auth.sendPasswordResetEmail(email)`
 
 ### State Management
 
-In-memory JavaScript variables:
+In-memory JavaScript variables synchronized with Firestore:
 
 ```javascript
-// In-memory item collections
-let db; // IndexedDB database instance
-let foodItems = {}; // Foods indexed by ID
-let medicineItems = {}; // Medicines indexed by ID
-let sortedFoodItems = []; // Foods sorted by expiration
-let sortedMedicineItems = []; // Medicines sorted by expiration
+// Authentication
+let currentUser; // Firebase user object
 
-// DOM references
-const foodsListElement = document.getElementById("foods-list");
-const medicinesListElement = document.getElementById("medicines-list");
+// Dynamic categories system
+window.userCategories = []; // Array of category objects
+window.itemsByCategory = {}; // Items indexed by category key
+window.sortedItemsByCategory = {}; // Sorted arrays per category
+window.fuseByCategory = {}; // Fuse.js search instances
+window.categoryListeners = {}; // Firestore unsubscribe functions
+
+// User preferences (per category)
+window.sortingPreferences = {}; // Sort criteria per category
+window.sortingDirections = {}; // Sort direction per category
+window.filteringPreferences = {}; // Filter selection per category
+window.showHiddenItems = {}; // Show distant items toggle
 ```
 
-State is ephemeral - rebuilt on each page load from IndexedDB.
+State is synchronized automatically via Firestore real-time listeners.
 
 ## Presentation Layer
 
@@ -160,11 +245,13 @@ Static HTML with embedded JavaScript and localized strings:
 
 Bootstrap 5 + MDB UI Kit providing:
 
-- Tabs (Foods, Medicines, Settings)
-- Modals (Add/Edit items)
+- Dynamic tabs (user-defined categories + Settings)
+- Modals (Add/Edit items, authentication)
 - List groups with badges
 - Floating label forms
 - Visual warnings (red/yellow alerts)
+- Dropdown menus for sorting and filtering
+- Shopping mode toggle
 
 Mobile-first responsive design with touch-friendly interactions.
 
@@ -188,9 +275,12 @@ Cache-first strategy:
 
 ### Offline Flow
 
-1. First visit: Install service worker, cache assets
-2. Subsequent visits: Serve from cache, use IndexedDB
-3. Install as PWA: Standalone window, app icon
+1. First visit: Install service worker, cache assets, authenticate
+2. Subsequent visits: Serve from cache, sync with Firestore
+3. Offline mode: Access cached app shell, queue operations for when online
+4. Install as PWA: Standalone window, app icon
+
+Note: Full functionality requires internet connection for Firestore operations.
 
 ## Internationalization
 
@@ -207,17 +297,34 @@ Luxon handles date localization: `.setLocale('{{ site.active_lang }}').toRelativ
 
 ## Security & Privacy
 
-- **No server communication**: All data stays in browser
-- **Same-origin policy**: IndexedDB isolated per origin
-- **No encryption**: Data unencrypted in browser (rely on OS-level security)
-- **No tracking**: No analytics, cookies, or external calls
+- **Firebase Authentication**: Secure email/password authentication
+- **Data Isolation**: Each user's data is completely isolated via Firestore security rules
+- **HTTPS Only**: All communication encrypted in transit
+- **No Third-Party Tracking**: No analytics, cookies, or external tracking
+- **User-Controlled Data**: Users can export and delete their data at any time
+- **Server-Side Security Rules**: Firestore rules ensure users can only access their own data
+
+Firestore Security Rules example:
+
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
+```
 
 ## Design Decisions
 
-**Why IndexedDB?** Structured data, indexing, async operations, larger capacity than LocalStorage.
+**Why Firebase Firestore?** Real-time synchronization across devices, automatic scaling, offline support with automatic sync when reconnected, strong consistency guarantees, and built-in security rules.
 
-**Why Static Site Generation?** No server costs, fast loading, simple deployment, no server vulnerabilities.
+**Why Firebase Authentication?** Industry-standard security, handles password hashing and validation, provides password reset functionality, no server-side code needed, and integrates seamlessly with Firestore.
 
-**Why Vanilla JavaScript?** No build step, smaller bundle, direct control, long-term stability.
+**Why Static Site Generation?** No server costs for app hosting, fast loading, simple deployment, no server vulnerabilities, CDN-friendly.
 
-**Why Offline-First?** Privacy, reliability, speed, works anywhere.
+**Why Vanilla JavaScript?** No build step complexity, smaller bundle size, direct control over code, long-term stability without framework dependencies.
+
+**Why Dynamic Categories?** Users can organize items according to their needs (e.g., "Refrigerator", "Freezer", "Pantry"), with custom emojis for visual identification.

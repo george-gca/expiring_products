@@ -1,123 +1,81 @@
 # Expiring Products
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/your-badge-id/deploy-status)](https://expiring-products.netlify.app/)
+A simple web app to help controlling expiring products in my pantry. It uses [Firebase Firestore](https://firebase.google.com/docs/firestore) as a cloud database with real-time synchronization and [Firebase Authentication](https://firebase.google.com/docs/auth) for secure user accounts. It can also be installed locally as a [Progressive Web App](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps).
 
-A smart, offline-first web application to track and manage expiring products in your pantry and medicine cabinet. Built as a Progressive Web App (PWA) with multilingual support (Portuguese and English), it runs entirely in your browser with no server or account required.
-
-**🌐 Live Demo:** [expiring-products.netlify.app](https://expiring-products.netlify.app/)
-
-## Why Use This?
-
-- **🔒 Privacy-First:** All data stays in your browser using IndexedDB
-- **📱 Works Offline:** Install as a PWA and use without internet
-- **🌍 Multilingual:** Full support for Portuguese (pt-br) and English (en-us)
-- **⚡ Smart Tracking:** Automatic expiration warnings and intelligent sorting
-- **💾 Backup Ready:** Export/import your data as JSON anytime
-- **🎯 No Login Required:** Start using immediately, no account needed
-
-## Quick Start
-
-1. Visit [expiring-products.netlify.app](https://expiring-products.netlify.app/)
-2. Click the "+" button to add your first product
-3. Enter product name, quantity, and expiration date
-4. Optional: Set "duration after opened" for items that expire quickly after opening
-
-Your data is automatically saved in your browser and persists across sessions.
+To use the [web application](https://expiring-products.netlify.app/), create an account with your email and password. All your data is stored securely in the cloud and syncs automatically across all your devices. You can export your database as a JSON file for backup purposes or to transfer data between accounts.
 
 ## Features
 
-### Core Functionality
+- **User Authentication**: Secure login with email and password
+- **Cloud Synchronization**: Data automatically syncs across all your devices
+- **Custom Categories**: Create and manage your own product categories with custom emojis
+- **Smart Product Management**: Add products with name, expiration date, quantity, and post-opening duration
+- **Item Status Tracking**: Mark products as opened, consumed, or discarded
+- **Intelligent Sorting**: Products sorted by expiration date, opened status, and quantity
+- **Auto-Update Expiration**: Expiration dates automatically adjust when items are opened based on post-opening duration
+- **Shopping Mode**: View recurring purchases and quickly add items to your pantry
+- **Visual Warnings**: Color-coded alerts for items expiring soon or already expired
+- **Search and Filter**: Find items quickly with search and filter by opened/unopened status
+- **Flexible Sorting**: Sort by date, name, or quantity in ascending or descending order
+- **Data Backup**: Export database as JSON file for backup or account transfer
+- **Data Import**: Restore data from JSON backup files
+- **Progressive Web App**: Install on desktop or mobile for offline access
+- **Responsive Design**: Works seamlessly on phones, tablets, and computers
+- **Statistics Tracking**: Track consumption and waste patterns (for future analytics features)
 
-- **Product Management**
-  - Add items with name, quantity, and expiration date
-  - Separate tabs for Foods and Medicines
-  - Auto-complete from product history with saved duration values
-  - Mark items as opened, consumed, or discarded
+## Getting Started
 
-- **Smart Expiration Tracking**
-  - Items sorted by expiration date (closest first), then by quantity
-  - Visual warnings: Red for expired items, yellow for items expiring within 3 days
-  - Automatic expiration date update when items are opened (based on "duration after opened")
-  - Daily automatic checks for expired items
+### Creating an Account
 
-- **Data Management**
-  - Export entire database as JSON file
-  - Import previously exported data
-  - Local storage using IndexedDB (no server required)
-  - Product history tracking for quick re-entry
+1. Visit [expiring-products.netlify.app](https://expiring-products.netlify.app/)
+1. Enter your email address and a secure password
+1. Click **Sign Up** to create your account
+1. Start adding products to your pantry!
 
-- **Progressive Web App**
-  - Install on desktop and mobile devices
-  - Works completely offline
-  - Responsive Bootstrap 5 + MDB UI Kit design
-  - Service worker caching for performance
+### Logging In
 
-- **Multilingual Support**
-  - Portuguese (pt-br) - default
-  - English (en-us)
-  - Easy language switching in settings
+1. Enter your email and password
+1. Click **Login**
+1. Your data will automatically sync from the cloud
 
-## Installing as PWA
+### Forgot Password?
 
-Install the app on your device for offline access and a native app experience. Click the install icon in your browser's address bar (desktop) or use "Add to Home screen" from the browser menu (mobile).
+Click the **Forgot Password?** link on the login screen and follow the instructions sent to your email.
 
-![Desktop Installation](./readme_img/install_pwa_desktop.png)
-![Mobile Installation](./readme_img/install_pwa_mobile.jpg)
+## Installing on your local machine
 
-For detailed installation steps, see the [USER_GUIDE.md](USER_GUIDE.md#installing-as-an-app).
+1. Click on the install icon on the right side of the address bar
 
-## Technology Stack
+![Install as PWA](./readme_img/install_pwa_desktop.png)
 
-- **Jekyll** + Liquid templating - Static site generation
-- **Bootstrap 5.3.3** + MDB UI Kit 8.0.0 - UI framework
-- **Luxon 3.5.0** - Date/time manipulation
-- **IndexedDB** - Client-side data storage
-- **Service Worker** - Offline functionality
-- **Jekyll Polyglot** - Multi-language support
+2. Confirm installation
 
-## Project Structure
+![Confirm installation](./readme_img/install_pwa_desktop_confirmation.png)
 
-```text
-├── _includes/          # Liquid partials and embedded JavaScript
-│   ├── scripts/        # Core application logic (db, ui, utils)
-│   └── *.liquid        # UI components (modals, tabs)
-├── _layouts/           # Page layouts
-├── _pages/             # Multilingual content (en-us, pt-br)
-├── assets/             # Images, JS, service worker
-└── _config.yml         # Jekyll configuration
-```
+3. Open the app from the installed icon
 
-## For Developers
+<img src="./assets/img/favicon.png" alt="favicon" width="64"/>
 
-Want to contribute or run locally? See **[DEVELOPMENT.md](DEVELOPMENT.md)** for setup instructions, contribution guidelines, and coding standards.
+## Installing on your mobile device
 
-## Documentation
+1. Open the [web application](https://expiring-products.netlify.app/) on your mobile browser
+2. Click on the three dots menu on the right side of the address bar
+3. Click on "Add to Home screen"
 
-- **[USER_GUIDE.md](USER_GUIDE.md)** - Complete user manual
-- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Developer setup and contribution guide
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Technical architecture details
+<img src="./readme_img/install_pwa_mobile.jpg" alt="Add to home screen" width="256"/>
 
-## Browser Compatibility
+4. Confirm installation
 
-Requires modern browsers with IndexedDB, Service Workers, and ES6+ JavaScript support.
-Tested on Chrome and Firefox (latest versions).
+<img src="./readme_img/install_pwa_mobile_confirmation.jpg" alt="Confirm installation" width="256"/>
 
-## Privacy & Data
+5. Open the app from the installed icon
 
-All data is stored locally in your browser's IndexedDB.
-No information is sent to external servers.
-Export your data anytime from the Settings tab.
+<img src="./readme_img/pwa_mobile_icon.jpg" alt="App icon" width="256"/>
 
-## License
+6. Enjoy!
 
-See [LICENSE](LICENSE) file for details.
+## TODO
 
-## Author
-
-Created by [George](https://github.com/george-gca)
-
-## Acknowledgments
-
-- [Bootstrap](https://getbootstrap.com/) & [MDB UI Kit](https://mdbootstrap.com/) - UI components
-- [Luxon](https://moment.github.io/luxon/) - Date/time library
-- [IndexedDB Backup/Restore utilities](https://gist.github.com/loilo/ed43739361ec718129a15ae5d531095b)
+- Statistics tab with consumption and waste analytics
+- Improve UI with additional visual enhancements
+- Sharing categories between users

@@ -5,8 +5,12 @@ Welcome to Expiring Products! This guide explains how to use the app effectively
 ## Table of Contents
 
 - [Getting Started](#getting-started)
+- [Account Management](#account-management)
 - [Adding Items](#adding-items)
+- [Managing Categories](#managing-categories)
 - [Managing Items](#managing-items)
+- [Shopping Mode](#shopping-mode)
+- [Searching and Filtering](#searching-and-filtering)
 - [Visual Warnings](#visual-warnings)
 - [Backup and Restore](#backup-and-restore)
 - [Tips and Best Practices](#tips-and-best-practices)
@@ -15,32 +19,79 @@ Welcome to Expiring Products! This guide explains how to use the app effectively
 
 ## Getting Started
 
-### First Visit
+### Creating an Account
 
 1. Open [expiring-products.netlify.app](https://expiring-products.netlify.app/) in your web browser
-2. You'll see two tabs: **Foods** and **Medicines**
-3. Both lists will be empty with the message "No items here."
+2. Enter your **email address** and create a **secure password**
+3. Click the **Sign Up** button
+4. You're ready to start adding items!
+
+### Logging In
+
+If you already have an account:
+
+1. Enter your email and password
+2. Click **Login**
+3. Your data will automatically sync from the cloud
+
+### First Time Setup
+
+After creating your account:
+
+1. You'll see default tabs: **Foods** and **Medicines**
+2. You can create custom categories in the **Settings** tab
+3. Both lists will initially be empty with the message "No items here."
 4. Click the floating "+" button in the bottom-right corner to add your first item
 
 ### What You'll See
 
-The interface has three main tabs:
+The interface has dynamic tabs based on your categories plus a Settings tab:
 
-- **Foods**: Track food items in your pantry
-- **Medicines**: Track medications and supplements
-- **Settings**: Export/import data and change language
+- **Custom Category Tabs**: Your personalized categories (e.g., Foods, Medicines, Freezer, etc.)
+- **Settings**: Manage categories, export/import data, change language, and logout
+
+## Account Management
+
+### Changing Your Password
+
+If you need to change your password:
+
+1. Logout from your account
+2. On the login screen, click **Forgot Password?**
+3. Enter your email address
+4. Check your email for a password reset link
+5. Follow the link and create a new password
+
+### Logging Out
+
+To logout:
+
+1. Go to the **Settings** tab
+2. Click the **Logout** button
+3. You'll be returned to the login screen
+
+### Multi-Device Sync
+
+Your data automatically syncs across all devices:
+
+- Login with the same account on multiple devices
+- Changes made on one device appear instantly on others
+- Real-time updates happen automatically when you're online
+- No manual sync required!
 
 ## Adding Items
 
 ### Basic Steps
 
 1. Click the **"+" button** (floating action button in bottom-right)
-2. Select the appropriate tab (Foods or Medicines) before clicking "+"
+2. Select the appropriate tab/category before clicking "+"
 3. Fill in the item details:
    - **Name**: Product name (e.g., "Milk", "Aspirin")
+   - **Category**: Select which category to add the item to (if dropdown is shown)
    - **Quantity**: How many units you have
    - **Expire in**: When the product expires
    - **Duration in days (after opened)**: Optional - how many days the product lasts after opening
+   - **Recurring purchase**: Check if you buy this item regularly (for shopping mode)
 
 4. Click the **checkmark** button to save
 
@@ -95,6 +146,38 @@ The interface has three main tabs:
 - Quantity: 5
 - Expire in: March 2026
 - Duration: 3 (use within 3 days after opening)
+
+## Managing Categories
+
+### Creating Custom Categories
+
+You can organize items however you like by creating custom categories:
+
+1. Go to the **Settings** tab
+2. Scroll to the **Manage Categories** section
+3. Enter a category name (e.g., "Freezer", "Pantry", "Refrigerator")
+4. Click the emoji button to select an icon
+5. Click **Add Category**
+
+The new category tab will appear immediately!
+
+### Editing Categories
+
+To rename a category or change its emoji:
+
+1. Go to **Settings** > **Manage Categories**
+2. Click the **Edit** button (pencil icon) next to the category
+3. Enter the new name in the prompt
+4. Choose a new emoji from the list
+5. Click OK to save
+
+### Deleting Categories
+
+**Warning**: Deleting a category also deletes all items in that category!
+
+1. Go to **Settings** > **Manage Categories**
+2. Click the **Delete** button (trash icon) next to the category
+3. Confirm the deletion
 
 ## Managing Items
 
@@ -178,6 +261,87 @@ You can perform multiple actions at once:
 - Total must not exceed current quantity
 - At least one field must have a value > 0
 
+## Shopping Mode
+
+Shopping mode helps you manage recurring purchases and quickly restock your pantry.
+
+### Enabling Shopping Mode
+
+1. Go to any category tab
+2. Find the **Shopping Mode** toggle switch (usually near the top or in Settings)
+3. Turn it **ON**
+
+### How Shopping Mode Works
+
+When enabled, the app shows:
+
+- Items you marked as "recurring purchases"
+- Items from your purchase history
+- Items currently in your pantry (if marked as recurring)
+
+**In Shopping Mode, you can:**
+
+- **View your shopping list**: See all recurring items you typically buy
+- **Skip items temporarily**: Click the eye icon to hide items you don't need right now
+- **Add to pantry quickly**: Click the cart icon to open the Add Item form with the name pre-filled
+
+### Adding Items to Pantry from Shopping List
+
+1. Enable Shopping Mode
+2. Find the item you want to purchase
+3. Click the **cart icon** (🛒)
+4. The Add Item form opens with the name already filled in
+5. Enter quantity and expiration date
+6. Click checkmark to save
+
+The item automatically hides from your shopping list after you add it to your pantry!
+
+### Managing Hidden Shopping Items
+
+Items you skip remain hidden until you:
+
+- Turn off Shopping Mode and turn it back on (clears hidden items)
+- Or they automatically reappear after some time
+
+## Searching and Filtering
+
+### Searching for Items
+
+Each category has a search box at the top:
+
+1. Click in the search field
+2. Type the product name
+3. Results filter in real-time using fuzzy matching (finds items even with typos!)
+
+### Sorting Items
+
+Click the **Sort** dropdown to choose how to sort items:
+
+- **By Date**: Expiration date (soonest first or last)
+- **By Name**: Alphabetically (A-Z or Z-A)
+- **By Quantity**: Number of items (lowest or highest first)
+
+Each category remembers your sorting preference!
+
+### Filtering Items
+
+Use the filter buttons to show only:
+
+- **All Items**: Show everything
+- **Opened**: Only items that have been opened
+- **Unopened**: Only items that haven't been opened
+
+### Hiding Distant Expiration Dates
+
+To reduce clutter, you can hide items that don't expire soon:
+
+1. Go to **Settings** tab
+2. Find **Hide items expiring beyond** setting
+3. Toggle it ON
+4. Set the threshold (e.g., 3 months)
+
+Items expiring beyond this threshold are hidden. Click "Show hidden items" button in each category to temporarily reveal them.
+
 ## Visual Warnings
 
 Items change color based on expiration status:
@@ -196,7 +360,11 @@ The app automatically checks expiration dates when you open it, once daily, and 
 2. Click **"Export data"**
 3. Save the `expiring_products.json` file somewhere safe (cloud storage, external drive)
 
-Exported data includes all food items, medicine items, and product history.
+Exported data includes all items, categories, and item history. This is useful for:
+
+- **Backup**: Protect against accidental data loss
+- **Account Transfer**: Move data to a different account
+- **Data Portability**: Keep a local copy of your data
 
 ### Importing Data
 
@@ -208,44 +376,55 @@ Exported data includes all food items, medicine items, and product history.
 
 **Best Practices**:
 
-- Export regularly (weekly/monthly)
-- Export before clearing browser data or uninstalling
+- Export regularly (weekly/monthly) for backup
+- Export before making major changes
 - Keep backup versions with dates in filename
+- Store backups in multiple locations (cloud storage, external drive)
 
 ## Tips and Best Practices
 
+- **Use custom categories** to match your storage locations (Fridge, Freezer, Pantry, etc.)
+- **Mark recurring items** when adding products you buy regularly for easier shopping
 - **Use consistent names** for products to benefit from auto-complete
-- **Set realistic durations** for how long items last after opening (Milk: 5-7 days, Eye drops: 28 days)
+- **Set realistic durations** for how long items last after opening
 - **Update quantities immediately** when consuming items
+- **Enable shopping mode** before going to the store
 - **Check daily** to see what's expiring soon and plan meals
 - **Use oldest items first** - items are sorted by expiration automatically
-- **Track medications** including prescriptions, OTC drugs, vitamins, and first aid supplies
+- **Sync across devices** by using the same account on your phone and computer
+- **Export regularly** to keep a backup of your data
 
 ## FAQ
 
 **Q: Do I need to create an account?**
-A: No. The app works completely without registration or login.
+A: Yes. You need to sign up with an email and password to use the app. This allows your data to sync across devices.
 
 **Q: Is my data stored on a server?**
-A: No. All data is stored locally in your browser using IndexedDB.
+A: Yes, your data is securely stored in Firebase Firestore (Google's cloud database). Only you can access your data.
 
 **Q: Can I use this on multiple devices?**
-A: Yes, but data doesn't sync automatically. Use export/import to transfer data between devices.
+A: Yes! Login with the same account on all your devices and your data syncs automatically in real-time.
 
 **Q: Does it work offline?**
-A: Yes! After the first visit, the app works completely offline if installed as a PWA.
+A: The app interface works offline after the first visit, but you need an internet connection to sync data with the cloud.
 
 **Q: Is my data private?**
-A: Absolutely. No data is sent to any server. Everything stays in your browser.
+A: Absolutely. Your data is protected by Firebase security rules and only accessible with your login credentials. No one else can see your data.
+
+**Q: What happens if I forget my password?**
+A: Click "Forgot Password?" on the login screen and follow the email instructions to reset it.
+
+**Q: Can I delete my account?**
+A: Currently, you can export your data and stop using the app. Contact support for complete account deletion.
 
 **Q: Which browsers are supported?**
-A: Chrome, Firefox, Safari, and Edge (recent versions).
+A: Modern versions of Chrome, Firefox, Safari, and Edge.
 
 **Q: What happens if I clear browser data?**
-A: Your data is deleted unless you've exported it first. Always export before clearing browser data.
+A: Your local cache is cleared, but your data is safe in the cloud. Just login again to restore everything.
 
 **Q: What if I make a mistake?**
-A: Edit items to fix quantities, re-add deleted items, or import a previous backup.
+A: Edit items to fix quantities, or import a previous backup if you exported one.
 
 **Q: Can I edit the expiration date after adding an item?**
 A: Delete the item and re-add it, or export, edit the JSON file, and import.
@@ -256,16 +435,38 @@ A: Click the item and set "Consumed" or "Discarded" equal to the full quantity.
 **Q: Do I have to set the "duration" field?**
 A: No, it's optional. Only use it for items that expire quickly after opening.
 
+**Q: Can I share my pantry with family members?**
+A: Currently, each account is separate. Sharing features may be added in the future.
+
+**Q: How do I create a new category?**
+A: Go to Settings > Manage Categories, enter a name, choose an emoji, and click Add Category.
+
 ## Troubleshooting
 
-**Items disappear after closing browser:**
+**Cannot login / Authentication errors:**
 
-- Enable cookies and site data in browser settings
-- Don't use private/incognito mode
-- Try a different browser
+- Verify you're using the correct email and password
+- Check your internet connection
+- Try resetting your password using "Forgot Password?"
+- Clear browser cache and try again
+
+**Data not syncing across devices:**
+
+- Ensure you're logged in with the same account on both devices
+- Check internet connection on both devices
+- Refresh the page or close and reopen the app
+- Check Firebase status at [status.firebase.google.com](https://status.firebase.google.com)
+
+**Items don't appear after adding:**
+
+- Check internet connection
+- Refresh the page
+- Verify you're viewing the correct category tab
+- Check browser console for errors (F12)
 
 **Export doesn't work:**
 
+- Ensure you have items to export
 - Check browser download permissions
 - Try a different browser
 - Disable download-blocking extensions
@@ -274,17 +475,33 @@ A: No, it's optional. Only use it for items that expire quickly after opening.
 
 - Ensure you're importing a valid JSON file from this app
 - Check file isn't corrupted
+- Verify you're logged in
+- Check file size isn't too large
 
 **App doesn't work offline:**
 
-- Visit the site online first to install service worker
+- The interface caches after first visit, but data sync requires internet
+- Ensure service worker is installed (check browser DevTools)
 - Not available in private/incognito mode
-- Try hard refresh (Ctrl+Shift+R or Cmd+Shift+R)
+
+**Real-time sync not working:**
+
+- Verify internet connection
+- Check if other tabs/devices are actually online
+- Refresh the page
+- Logout and login again
+
+**Shopping mode shows no items:**
+
+- Ensure you've marked items as "recurring purchase" when adding them
+- Check you have items in your purchase history
+- Verify shopping mode is actually enabled
 
 **Colors don't show for expired items:**
 
 - Refresh the page
 - Check browser console for errors (F12)
+- Wait a moment for the automatic expiry check to run
 
 **Need more help?**
 Open an issue on [GitHub](https://github.com/george-gca/expiring_products/issues) with:
