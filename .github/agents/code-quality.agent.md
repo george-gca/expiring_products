@@ -18,15 +18,20 @@ You are an expert code quality reviewer for this project.
   - Jekyll 4.x with Liquid templating
   - Vanilla JavaScript (ES6+) - no frameworks
   - Bootstrap 5.3.3 + MDB UI Kit 8.0.0
-  - IndexedDB for client-side storage
+  - Firebase 12.3.0 (Authentication + Firestore)
   - Service Workers for PWA functionality
   - Luxon 3.5.0 for date/time operations
   - Jekyll Polyglot for i18n (pt-br, en-us)
+  - Fuse.js for fuzzy search
 
 - **File Structure:**
   - `_includes/scripts/*.liquid` - Core JavaScript logic embedded in Liquid templates
+    - `db.js.liquid` - Firestore database operations and real-time listeners
+    - `ui.js.liquid` - UI event handlers and user interactions
+    - `utils.js.liquid` - Utility functions, sorting, and filtering
   - `_includes/*.liquid` - UI components and modals
-  - `assets/js/` - Service worker and standalone JavaScript modules
+  - `_includes/script.liquid` - Firebase initialization and authentication
+  - `assets/js/` - Service worker and backup/restore modules
   - `_config.yml` - Jekyll configuration
   - `_pages/` - Multilingual content
 
@@ -130,52 +135,159 @@ items.forEach((item) => {
 });
 ```
 
-### IndexedDB patterns
+### Firebase Firestore patterns
 
-**Transaction safety:**
+**Authentication check before operations:**
 
 ```javascript
-// ✅ Good - specify read/write mode explicitly
-const transaction = db.transaction([FOODS_TABLE], "readwrite");
-const objectStore = transaction.objectStore(FOODS_TABLE);
+// ✅ Good - always verify user is authenticated
+function addData(newItem) {
+  if (!currentUser) {
+    return Promise.reject("User not authenticated");
+  }
 
-transaction.oncomplete = () => {
-  console.log("Transaction completed successfully");
-  displayData();
-};
+  return db
+    .collection("users")
+    .doc(currentUser.uid)
+    .collection("items")
+    .add(newItem)
+    .catch((error) => {
+      ErrorHandler.handleDatabaseError("add item", error);
+      throw error;
+    });
+}
 
-transaction.onerror = (event) => {
-  console.error("Transaction failed:", event.target.error);
-};
-
-// ❌ Bad - default to readonly, no transaction monitoring
-const objectStore = db.transaction([FOODS_TABLE]).objectStore(FOODS_TABLE);
+// ❌ Bad - no authentication check, silent failures
+function addData(newItem) {
+  db.collection("users").doc(currentUser.uid).collection("items").add(newItem);
+}
 ```
 
-**Cursor iteration:**
+**Real-time listeners:**
 
 ```javascript
-// ✅ Good - proper cursor handling with continue()
-objectStore.openCursor().onsuccess = (event) => {
-  const cursor = event.target.result;
+// ✅ Good - setup listener with error handling and cleanup
+function setupRealtimeListener(category) {
+  if (!currentUser) return;
 
-  if (cursor) {
-    processItem(cursor.value);
-    cursor.continue();
-  } else {
-    console.log("All items processed");
-    finalizeDisplay();
+  return db
+    .collection("users")
+    .doc(currentUser.uid)
+    .collection("items")
+    .where("category", "==", category)
+    .orderBy("expiring_date", "asc")
+    .onSnapshot(
+      (querySnapshot) => {
+        const categoryItems = {};
+
+        querySnapshot.forEach((doc) => {
+          categoryItems[doc.id] = {
+            id: doc.id,
+            ...doc.data(),
+          };
+        });
+
+        updateCategoryData(category, categoryItems);
+        updateDisplay();
+      },
+      (error) => {
+        ErrorHandler.handleDatabaseError("fetch items", error);
+      }
+    );
+}
+
+// ❌ Bad - no error handler, no return for cleanup
+db.collection("users")
+  .doc(currentUser.uid)
+  .collection("items")
+  .where("category", "==", category)
+  .onSnapshot((snapshot) => {
+    snapshot.forEach((doc) => {
+      processItem(doc.data());
+    });
+  });
+```
+
+**Document operations:**
+
+```javascript
+// ✅ Good - explicit error handling, proper data preparation
+function editData(editedItem) {
+  if (!currentUser) {
+    console.warn("Cannot update item: User not authenticated");
+    return;
   }
+
+  // Remove ID from update payload
+  const dataToUpdate = { ...editedItem };
+  delete dataToUpdate.id;
+
+  db.collection("users")
+    .doc(currentUser.uid)
+    .collection("items")
+    .doc(editedItem.id)
+    .update(dataToUpdate)
+    .catch((error) => {
+      ErrorHandler.handleDatabaseError("update item", error);
+    });
+}
+
+// ❌ Bad - mutating original object, no validation
+function editData(editedItem) {
+  delete editedItem.id;
+  db.collection("users")
+    .doc(currentUser.uid)
+    .collection("items")
+    .doc(editedItem.id)
+    .update(editedItem);
+}
+```
+
+**Atomic operations and transactions:**
+
+```javascript
+// ✅ Good - use FieldValue.increment() for atomic counters
+const statsUpdate = {
+  [`${category}_consumed_items`]:
+    firebase.firestore.FieldValue.increment(quantity),
 };
 
-// ❌ Bad - missing continue() or no completion handling
-objectStore.openCursor().addEventListener("success", (e) => {
-  const cursor = e.target.result;
-  if (cursor) {
-    processItem(cursor.value);
-    // Missing cursor.continue()!
-  }
+db.collection("users")
+  .doc(currentUser.uid)
+  .collection("statistics")
+  .doc("stats")
+  .update(statsUpdate);
+
+// ✅ Good - use transactions for operations requiring consistency
+const batch = db.batch();
+const itemRef = db
+  .collection("users")
+  .doc(currentUser.uid)
+  .collection("items")
+  .doc(itemId);
+const statsRef = db
+  .collection("users")
+  .doc(currentUser.uid)
+  .collection("statistics")
+  .doc("stats");
+
+batch.update(itemRef, { quantity: newQuantity });
+batch.update(statsRef, {
+  total_items: firebase.firestore.FieldValue.increment(-1),
 });
+
+await batch.commit();
+
+// ❌ Bad - separate operations that should be atomic
+db.collection("users")
+  .doc(currentUser.uid)
+  .collection("statistics")
+  .doc("stats")
+  .get()
+  .then((doc) => {
+    const count = doc.data().consumed_items || 0;
+    doc.ref.update({ consumed_items: count + quantity }); // Race condition!
+  });
 ```
 
 ### Service Worker best practices
@@ -327,21 +439,150 @@ const display_data = (el, i, si, t) => {
 ### Date/time handling with Luxon
 
 ```javascript
-// ✅ Good - use Luxon for date operations
-const expiringDate = luxon.DateTime.fromISO(item.expiring_date);
-const today = luxon.DateTime.now().startOf("day");
-const daysUntilExpiry = expiringDate.diff(today, "days").days;
+// ✅ Good - use Luxon for date operations and intervals
+const currentDateTime = DateTime.now();
+const itemExpirationDate = DateTime.fromISO(item.expiring_date);
 
-if (daysUntilExpiry < 0) {
+if (itemExpirationDate < currentDateTime) {
   markAsExpired(item);
-} else if (daysUntilExpiry <= 3) {
-  markAsExpiringSoon(item);
+} else {
+  const daysUntilExpiry = Interval.fromDateTimes(
+    currentDateTime,
+    itemExpirationDate
+  ).length("days");
+
+  if (daysUntilExpiry <= 3) {
+    markAsExpiringSoon(item);
+  }
 }
+
+// ✅ Good - store dates as ISO strings in Firestore
+const expiringDate = DateTime.fromISO(expiringDateInput.value).endOf("day");
+const newItem = {
+  name: itemName,
+  expiring_date: expiringDate.toISO(), // Store as ISO string
+  date_opened: null, // Use null for unopened items
+};
+
+// ✅ Good - parse ISO dates from Firestore
+querySnapshot.forEach((doc) => {
+  const data = doc.data();
+  categoryItems[doc.id] = {
+    id: doc.id,
+    ...data,
+    expiring_date: DateTime.fromISO(data.expiring_date), // Convert to Luxon
+  };
+});
 
 // ❌ Bad - manual date arithmetic prone to timezone issues
 const expiringDate = new Date(item.expiring_date);
 const today = new Date();
 const daysUntilExpiry = (expiringDate - today) / (1000 * 60 * 60 * 24);
+
+// ❌ Bad - storing Date objects in Firestore
+const newItem = {
+  expiring_date: new Date(), // Don't use Date objects
+};
+```
+
+### Firebase Authentication patterns
+
+```javascript
+// ✅ Good - authentication state observer with proper cleanup
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    currentUser = user;
+    loginContainer.style.display = "none";
+    mainContent.style.display = "block";
+
+    // Setup listeners after authentication
+    setupCategoriesListener();
+  } else {
+    currentUser = null;
+    loginContainer.style.display = "block";
+    mainContent.style.display = "none";
+
+    // Cleanup listeners
+    cleanupAllListeners();
+  }
+});
+
+// ❌ Bad - checking auth state without observer
+if (auth.currentUser) {
+  currentUser = auth.currentUser; // May be stale
+}
+```
+
+```javascript
+// ✅ Good - comprehensive error handling for auth operations
+loginBtn.addEventListener("click", async () => {
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+
+  if (!email || !password) {
+    showError("Please enter email and password");
+    return;
+  }
+
+  try {
+    await auth.signInWithEmailAndPassword(email, password);
+    // onAuthStateChanged will handle UI updates
+  } catch (error) {
+    let message = "Login failed. Please try again.";
+
+    switch (error.code) {
+      case "auth/invalid-email":
+        message = "Invalid email address.";
+        break;
+      case "auth/user-not-found":
+        message = "No account found with this email.";
+        break;
+      case "auth/wrong-password":
+        message = "Incorrect password.";
+        break;
+    }
+
+    showError(message);
+    console.error("Login error:", error);
+  }
+});
+
+// ❌ Bad - generic error handling
+loginBtn.addEventListener("click", () => {
+  auth.signInWithEmailAndPassword(email, password).catch((error) => {
+    alert("Login failed");
+  });
+});
+```
+
+```javascript
+// ✅ Good - proper listener cleanup on logout
+const cleanupAllListeners = () => {
+  // Unsubscribe from all active listeners
+  Object.values(window.categoryListeners).forEach((unsubscribe) => {
+    if (typeof unsubscribe === "function") {
+      unsubscribe();
+    }
+  });
+
+  window.categoryListeners = {};
+  window.itemsByCategory = {};
+  window.sortedItemsByCategory = {};
+};
+
+logoutBtn.addEventListener("click", async () => {
+  try {
+    await auth.signOut();
+    // onAuthStateChanged will call cleanupAllListeners()
+  } catch (error) {
+    console.error("Logout error:", error);
+  }
+});
+
+// ❌ Bad - no cleanup, causing memory leaks
+logoutBtn.addEventListener("click", () => {
+  auth.signOut();
+});
 ```
 
 ## Common anti-patterns to avoid
@@ -374,23 +615,49 @@ const getItem = async (id) => {
 };
 ```
 
-### 2. **Memory leaks from event listeners**
+### 2. **Memory leaks from event listeners and Firestore listeners**
 
 ```javascript
-// ❌ Creating listeners in loops without cleanup
+// ❌ Creating DOM listeners in loops without cleanup
 items.forEach((item) => {
   const button = createButton(item);
   button.addEventListener("click", () => deleteItem(item.id));
   container.appendChild(button);
 });
 
-// ✅ Use event delegation
+// ✅ Use event delegation for DOM events
 container.addEventListener("click", (event) => {
   if (event.target.classList.contains("delete-button")) {
     const itemId = event.target.dataset.itemId;
     deleteItem(itemId);
   }
 });
+
+// ❌ Not cleaning up Firestore listeners
+function setupListener(category) {
+  db.collection("items")
+    .where("category", "==", category)
+    .onSnapshot((snapshot) => {
+      // Process data
+    });
+  // Listener never cleaned up!
+}
+
+// ✅ Store and cleanup Firestore listeners
+function setupListener(category) {
+  // Cleanup existing listener if any
+  if (window.categoryListeners[category]) {
+    window.categoryListeners[category]();
+  }
+
+  // Store unsubscribe function
+  window.categoryListeners[category] = db
+    .collection("items")
+    .where("category", "==", category)
+    .onSnapshot((snapshot) => {
+      // Process data
+    });
+}
 ```
 
 ### 3. **Synchronous operations blocking UI**
@@ -421,12 +688,16 @@ When reviewing code, evaluate:
 
 1. **Correctness:** Does it work as intended? Are edge cases handled?
 2. **Error handling:** Are errors caught, logged with context, and user-friendly?
-3. **Performance:** DOM operations batched? IndexedDB transactions efficient?
-4. **Maintainability:** Clear variable names? Functions < 50 lines? Comments for "why" not "what"?
-5. **Security:** No XSS vulnerabilities? User input sanitized?
-6. **Accessibility:** Semantic HTML? ARIA labels where needed?
-7. **PWA compliance:** Service worker properly caching? Offline support functional?
-8. **Browser compatibility:** Using features supported in target browsers?
+3. **Authentication:** Is `currentUser` checked before Firestore operations?
+4. **Performance:** DOM operations batched? Firestore queries optimized with indexes?
+5. **Data consistency:** Using transactions/batches for related updates? Atomic increments for counters?
+6. **Memory management:** Firestore listeners properly cleaned up? No listener leaks?
+7. **Maintainability:** Clear variable names? Functions < 50 lines? Comments for "why" not "what"?
+8. **Security:** No XSS vulnerabilities? User input sanitized? Firestore rules enforced?
+9. **Accessibility:** Semantic HTML? ARIA labels where needed?
+10. **PWA compliance:** Service worker properly caching? Offline support functional?
+11. **Date handling:** Using Luxon consistently? Dates stored as ISO strings in Firestore?
+12. **Browser compatibility:** Using features supported in target browsers?
 
 ## Boundaries
 
@@ -448,3 +719,6 @@ When reviewing code, evaluate:
   - Make assumptions about browser support without verifying
   - Ignore the "no framework" constraint of this project
   - Suggest fixes that break multilingual support
+  - Recommend storing sensitive data in Firestore without encryption
+  - Suggest Firebase operations without authentication checks
+  - Propose solutions that ignore real-time listener cleanup
