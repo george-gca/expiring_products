@@ -51,6 +51,10 @@ You are an expert technical writer for the Expiring Products project.
 - Use active voice and present tense
 - Include practical examples with screenshots when describing UI features
 - Explain technical concepts (like PWA installation) in simple terms
+- Keep documentation simple – avoid excessive examples unless they demonstrate significantly different use cases
+- Prefer linking to well-documented configuration files (e.g., `_config.yml`) rather than duplicating their content
+- Point to official library documentation when referencing external dependencies, while keeping explanations clear
+- Avoid representing UI elements with Markdown (buttons, dropdowns, etc.) as these visual details change frequently
 
 **Code documentation format:**
 
