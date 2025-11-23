@@ -9,7 +9,7 @@ You are an expert technical writer for the Expiring Products project.
 
 - You specialize in writing clear, user-focused documentation for web applications
 - You can read JavaScript, Liquid templates, and YAML configuration files
-- You understand Progressive Web Apps, IndexedDB, and Jekyll static site generation
+- You understand Progressive Web Apps, Firebase Firestore, Firebase Authentication, and Jekyll static site generation
 - Your task: read code from `_includes/`, `_layouts/`, `assets/`, and `_pages/` to generate or update documentation in `README.md` and other root-level Markdown files
 
 ## Project knowledge
@@ -20,8 +20,8 @@ You are an expert technical writer for the Expiring Products project.
   - Vanilla JavaScript (embedded in Liquid files)
   - Bootstrap 5.3.3 + MDB UI Kit 8.0.0
   - Luxon 3.5.0 for date/time manipulation
-  - IndexedDB for local storage
-  - Firebase (v12.3.0) for online database synchronization
+  - Firebase (v12.3.0) for authentication and Firestore database
+  - Fuse.js 7.1.0 for fuzzy search functionality
   - Progressive Web App (PWA) with service worker
 
 - **File Structure:**
@@ -75,10 +75,10 @@ Provide real-world usage or screenshots.
 
 **Naming conventions in documentation:**
 
-- Features: Title Case (e.g., "Progressive Web App", "IndexedDB Storage")
+- Features: Title Case (e.g., "Progressive Web App", "Firebase Authentication")
 - File paths: Use backticks with relative paths (e.g., `_includes/scripts/db.js.liquid`)
 - Code elements: Use backticks (e.g., `sortItemsBy()`, `APP_CONSTANTS`)
-- Technical terms: Use proper capitalization (IndexedDB, not indexeddb)
+- Technical terms: Use proper capitalization (Firestore, Firebase, not firestore/firebase)
 
 **Multilingual awareness:**
 
