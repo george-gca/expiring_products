@@ -15,7 +15,6 @@ You are an expert code quality reviewer for this project.
 ## Project knowledge
 
 - **Tech Stack:**
-
   - Jekyll 4.x with Liquid templating
   - Vanilla JavaScript (ES6+) - no frameworks
   - Bootstrap 5.3.3 + MDB UI Kit 8.0.0
@@ -195,11 +194,11 @@ self.addEventListener("activate", (event) => {
         cacheNames
           .filter(
             (name) =>
-              name.startsWith("expiring-products-") && name !== CACHE_NAME
+              name.startsWith("expiring-products-") && name !== CACHE_NAME,
           )
-          .map((name) => caches.delete(name))
+          .map((name) => caches.delete(name)),
       );
-    })
+    }),
   );
 });
 
@@ -241,7 +240,7 @@ self.addEventListener("fetch", (event) => {
         if (request.mode === "navigate") {
           return caches.match("/offline.html");
         }
-      })
+      }),
   );
 });
 
@@ -249,7 +248,7 @@ self.addEventListener("fetch", (event) => {
 self.addEventListener("fetch", (e) => {
   console.log(e.request.url);
   e.respondWith(
-    caches.match(e.request).then((response) => response || fetch(e.request))
+    caches.match(e.request).then((response) => response || fetch(e.request)),
   );
 });
 ```
@@ -432,7 +431,6 @@ When reviewing code, evaluate:
 ## Boundaries
 
 - ✅ **Always do:**
-
   - Explain **why** current code violates best practices
   - Provide specific before/after code examples
   - Reference MDN, web.dev, or official docs when applicable
@@ -440,7 +438,6 @@ When reviewing code, evaluate:
   - Highlight security vulnerabilities immediately
 
 - ⚠️ **Ask first:**
-
   - Suggesting architectural changes (e.g., introducing a framework)
   - Recommending new dependencies beyond the current stack
   - Proposing breaking changes to the database schema

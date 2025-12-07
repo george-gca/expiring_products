@@ -37,7 +37,6 @@ The interface has three main tabs:
 1. Click the **"+" button** (floating action button in bottom-right)
 2. Select the appropriate tab (Foods or Medicines) before clicking "+"
 3. Fill in the item details:
-
    - **Name**: Product name (e.g., "Milk", "Aspirin")
    - **Quantity**: How many units you have
    - **Expire in**: When the product expires
@@ -117,7 +116,6 @@ Each item displays:
 
 1. Click on any item in the list
 2. An edit dialog appears with three options:
-
    - **Opened items**: Mark some units as opened
    - **Consumed items**: Mark some units as consumed/used
    - **Discarded items**: Mark some units as thrown away

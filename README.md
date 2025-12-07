@@ -29,28 +29,24 @@ Your data is automatically saved in your browser and persists across sessions.
 ### Core Functionality
 
 - **Product Management**
-
   - Add items with name, quantity, and expiration date
   - Separate tabs for Foods and Medicines
   - Auto-complete from product history with saved duration values
   - Mark items as opened, consumed, or discarded
 
 - **Smart Expiration Tracking**
-
   - Items sorted by expiration date (closest first), then by quantity
   - Visual warnings: Red for expired items, yellow for items expiring within 3 days
   - Automatic expiration date update when items are opened (based on "duration after opened")
   - Daily automatic checks for expired items
 
 - **Data Management**
-
   - Export entire database as JSON file
   - Import previously exported data
   - Local storage using IndexedDB (no server required)
   - Product history tracking for quick re-entry
 
 - **Progressive Web App**
-
   - Install on desktop and mobile devices
   - Works completely offline
   - Responsive Bootstrap 5 + MDB UI Kit design

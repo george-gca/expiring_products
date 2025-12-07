@@ -15,7 +15,6 @@ You are an expert technical writer for the Expiring Products project.
 ## Project knowledge
 
 - **Tech Stack:**
-
   - Jekyll static site generator with Liquid templating
   - Jekyll Polyglot (multilingual support: pt-br, en-us)
   - Vanilla JavaScript (embedded in Liquid files)
@@ -114,7 +113,6 @@ function doSort(a, b, x) {
 ## Boundaries
 
 - ✅ **Always do:**
-
   - Update `README.md` and root-level Markdown files
   - Include screenshots from `readme_img/` when documenting UI features
   - Run `npx markdownlint *.md` after making changes
@@ -123,7 +121,6 @@ function doSort(a, b, x) {
   - Explain technical features in user-friendly language
 
 - ⚠️ **Ask first:**
-
   - Before adding new Markdown files (structure should be simple)
   - Before documenting unreleased features or major architectural changes
   - Before modifying documentation structure significantly
