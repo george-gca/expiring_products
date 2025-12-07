@@ -192,7 +192,7 @@ function setupRealtimeListener(category) {
       },
       (error) => {
         ErrorHandler.handleDatabaseError("fetch items", error);
-      }
+      },
     );
 }
 
@@ -448,7 +448,7 @@ if (itemExpirationDate < currentDateTime) {
 } else {
   const daysUntilExpiry = Interval.fromDateTimes(
     currentDateTime,
-    itemExpirationDate
+    itemExpirationDate,
   ).length("days");
 
   if (daysUntilExpiry <= 3) {

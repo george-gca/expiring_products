@@ -52,7 +52,7 @@ self.addEventListener("install", (event) => {
       })
       .catch((error) => {
         console.error("Service worker install failed:", error);
-      })
+      }),
   );
 });
 
@@ -66,16 +66,16 @@ self.addEventListener("activate", (event) => {
             .filter(
               (cacheName) =>
                 cacheName !== CACHE_STATIC_NAME &&
-                cacheName !== CACHE_DYNAMIC_NAME
+                cacheName !== CACHE_DYNAMIC_NAME,
             )
-            .map((cacheName) => caches.delete(cacheName))
+            .map((cacheName) => caches.delete(cacheName)),
         );
       }),
       // Take control immediately
       self.clients.claim(),
     ]).catch((error) => {
       console.error("Service worker activation failed:", error);
-    })
+    }),
   );
 });
 
@@ -127,7 +127,7 @@ self.addEventListener("fetch", (event) => {
           // Could return a fallback page here for navigation requests
           throw error;
         });
-    })
+    }),
   );
 });
 
@@ -152,7 +152,7 @@ self.addEventListener("notificationclick", (event) => {
         if (clients.openWindow) {
           return clients.openWindow("/");
         }
-      })
+      }),
   );
 });
 
@@ -188,6 +188,6 @@ self.addEventListener("push", (event) => {
       requireInteraction: notificationData.requireInteraction,
       vibrate: [200, 100, 200],
       data: notificationData.data || {},
-    })
+    }),
   );
 });
