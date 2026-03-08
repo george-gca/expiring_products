@@ -190,9 +190,6 @@ function updateCategory(categoryId, categoryData) {
   if (!currentUser) return Promise.reject("User not authenticated");
 
   return db.collection('users').doc(currentUser.uid).collection('categories').doc(categoryId).update(categoryData)
-    .then(() => {
-      // console.log("Category updated successfully");
-    })
     .catch(error => {
       ErrorHandler.handleDatabaseError('update category', error);
       throw error;
@@ -208,9 +205,6 @@ function deleteCategory(categoryId) {
   if (!currentUser) return Promise.reject("User not authenticated");
 
   return db.collection('users').doc(currentUser.uid).collection('categories').doc(categoryId).delete()
-    .then(() => {
-      // console.log("Category deleted successfully");
-    })
     .catch(error => {
       ErrorHandler.handleDatabaseError('delete category', error);
       throw error;

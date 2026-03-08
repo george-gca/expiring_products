@@ -28,7 +28,6 @@ const APP_CONSTANTS = {
 const MILLISECONDS_PER_SECOND = 1000;
 const SECONDS_PER_MINUTE = 60;
 const MINUTES_PER_HOUR = 60;
-const HOURS_PER_DAY = 24;
 const EXPIRY_WARNING_DAYS = 3;
 
 // ========================================
@@ -95,6 +94,47 @@ function sortItemsBy(items, sortedItems, sortBy = 'date', direction = 'asc') {
 }
 
 /**
+ * Sort an array of items by criteria and direction (array-based variant of sortItemsBy)
+ * @param {Array} arr - Array of items to sort
+ * @param {string} sortBy - Sort criteria: 'date', 'name', or 'quantity'
+ * @param {string} direction - Sort direction: 'asc' or 'desc'
+ * @returns {Array} New sorted array
+ */
+function sortArrayBy(arr, sortBy = 'date', direction = 'asc') {
+  const sorted = [...arr];
+  const multiplier = direction === 'desc' ? -1 : 1;
+
+  switch (sortBy) {
+    case 'name':
+      sorted.sort((a, b) => {
+        const nameComparison = a.name.toLowerCase().localeCompare(b.name.toLowerCase()) * multiplier;
+        return nameComparison !== 0 ? nameComparison :
+               (a.expiring_date - b.expiring_date || b.opened - a.opened);
+      });
+      break;
+
+    case 'quantity':
+      sorted.sort((a, b) => {
+        const quantityComparison = (b.quantity - a.quantity) * multiplier;
+        return quantityComparison !== 0 ? quantityComparison :
+               (a.expiring_date - b.expiring_date || b.opened - a.opened);
+      });
+      break;
+
+    case 'date':
+    default:
+      sorted.sort((a, b) => {
+        const dateComparison = (a.expiring_date - b.expiring_date) * multiplier;
+        return dateComparison !== 0 ? dateComparison :
+               (b.opened - a.opened || b.quantity - a.quantity);
+      });
+      break;
+  }
+
+  return sorted;
+}
+
+/**
  * Filter items based on opened status
  * @param {Array} items - Array of items to filter
  * @param {string} filterBy - Filter criteria: 'all', 'opened', or 'unopened'
@@ -125,13 +165,9 @@ function filterItemsByExpiryDistance(items, monthsThreshold = 3, hideDistant = t
     return items;
   }
 
-  const now = DateTime.now();
-  const thresholdDate = now.plus({ months: monthsThreshold });
+  const thresholdDate = DateTime.now().plus({ months: monthsThreshold });
 
-  return items.filter(item => {
-    const expiryDate = DateTime.fromISO(item.expiring_date);
-    return expiryDate <= thresholdDate;
-  });
+  return items.filter(item => item.expiring_date <= thresholdDate);
 }
 
 /**
@@ -141,13 +177,9 @@ function filterItemsByExpiryDistance(items, monthsThreshold = 3, hideDistant = t
  * @returns {number} Number of items that would be hidden
  */
 function countDistantItems(items, monthsThreshold = 3) {
-  const now = DateTime.now();
-  const thresholdDate = now.plus({ months: monthsThreshold });
+  const thresholdDate = DateTime.now().plus({ months: monthsThreshold });
 
-  return items.filter(item => {
-    const expiryDate = DateTime.fromISO(item.expiring_date);
-    return expiryDate > thresholdDate;
-  }).length;
+  return items.filter(item => item.expiring_date > thresholdDate).length;
 }
 
 /**
@@ -292,13 +324,7 @@ const ErrorHandler = {
  * @param {Function} callback - The function to execute daily
  */
 const everyDay = (callback) => {
-  const now = new Date();
-  const millisecondsUntilMidnight =
-    HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND -
-    now.getHours() * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND -
-    now.getMinutes() * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND -
-    now.getSeconds() * MILLISECONDS_PER_SECOND -
-    now.getMilliseconds();
+  const millisecondsUntilMidnight = DateTime.now().endOf('day').diffNow().toMillis() + 1;
 
   setTimeout(async () => {
     try {
@@ -320,10 +346,9 @@ const everyDay = (callback) => {
  */
 function checkExpiryDateInList(item, itemIndex) {
   const currentDateTime = DateTime.now();
-  const itemExpirationDate = DateTime.fromISO(item.expiring_date);
   const listItemElement = document.getElementById(this.listId).children[itemIndex].children[0];
 
-  if (itemExpirationDate < currentDateTime) {
+  if (item.expiring_date < currentDateTime) {
     // Item has expired - mark as danger
     if (listItemElement.classList.contains(APP_CONSTANTS.CSS_CLASSES.LIST_ITEM_DANGER)) {
       return false; // Already marked, no change needed
@@ -333,7 +358,7 @@ function checkExpiryDateInList(item, itemIndex) {
     listItemElement.classList.add(APP_CONSTANTS.CSS_CLASSES.LIST_ITEM_DANGER);
 
   } else {
-    const daysUntilExpiry = Interval.fromDateTimes(currentDateTime, itemExpirationDate).length('days');
+    const daysUntilExpiry = Interval.fromDateTimes(currentDateTime, item.expiring_date).length('days');
 
     if (daysUntilExpiry <= EXPIRY_WARNING_DAYS) {
       // Item expires within warning threshold - mark as warning
@@ -413,8 +438,8 @@ const NotificationManager = {
       return 'granted';
     }
 
-    const permission = await Notification.permission === 'default' 
-      ? Notification.requestPermission() 
+    const permission = await Notification.permission === 'default'
+      ? Notification.requestPermission()
       : Notification.permission;
 
     return permission;
@@ -461,14 +486,12 @@ const NotificationManager = {
 
     window.userCategories.forEach(category => {
       const categoryItems = window.itemsByCategory[category.key];
-      
+
       if (categoryItems) {
         Object.values(categoryItems).forEach(item => {
-          const expiryDate = DateTime.fromISO(item.expiring_date);
-          
           // Check if item expires within threshold and hasn't expired yet
-          if (expiryDate <= thresholdDate && expiryDate >= now.startOf('day')) {
-            const daysUntilExpiry = Math.ceil(expiryDate.diff(now, 'days').days);
+          if (item.expiring_date <= thresholdDate && item.expiring_date >= now.startOf('day')) {
+            const daysUntilExpiry = Math.ceil(item.expiring_date.diff(now, 'days').days);
             expiringItems.push({
               ...item,
               daysUntilExpiry,
@@ -562,7 +585,7 @@ const NotificationManager = {
    */
   async checkAndNotify(force = false) {
     const preferences = this.getPreferences();
-    
+
     if (!preferences.enabled || Notification.permission !== 'granted') {
       return;
     }
@@ -571,7 +594,7 @@ const NotificationManager = {
     if (!force && preferences.lastCheck) {
       const lastCheck = DateTime.fromISO(preferences.lastCheck);
       const now = DateTime.now();
-      
+
       if (lastCheck.hasSame(now, 'day')) {
         // Already checked today, skip
         return;
@@ -579,7 +602,7 @@ const NotificationManager = {
     }
 
     const expiringItems = this.getExpiringItems(5);
-    
+
     if (expiringItems.length > 0) {
       await this.showExpiringNotification(expiringItems);
     }
@@ -590,7 +613,7 @@ const NotificationManager = {
    */
   initializeControls() {
     const notificationSwitch = document.getElementById('enable-notifications-switch');
-    
+
     if (!notificationSwitch) return;
 
     // Check if notifications are supported
@@ -612,11 +635,11 @@ const NotificationManager = {
       if (notificationSwitch.checked) {
         try {
           const permission = await this.requestPermission();
-          
+
           if (permission === 'granted') {
             this.savePreferences(true);
             alert('{{ page.notification_permission_granted }}');
-            
+
             // Check and send notification immediately if there are expiring items
             await this.checkAndNotify(true);
           } else {
