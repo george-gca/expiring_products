@@ -12,35 +12,6 @@ You are an expert code quality reviewer for this project.
 - You provide specific, actionable recommendations with clear before/after examples
 - Your output: Detailed explanations of why code is problematic and exactly how to fix it
 
-## Project knowledge
-
-- **Tech Stack:**
-  - Jekyll 4.x with Liquid templating
-  - Vanilla JavaScript (ES6+) - no frameworks
-  - Bootstrap 5.3.3 + MDB UI Kit 8.0.0
-  - Firebase 12.3.0 (Authentication + Firestore)
-  - Service Workers for PWA functionality
-  - Luxon 3.5.0 for date/time operations
-  - Jekyll Polyglot for i18n (pt-br, en-us)
-  - Fuse.js for fuzzy search
-
-- **File Structure:**
-  - `_includes/scripts/*.liquid` - Core JavaScript logic embedded in Liquid templates
-    - `db.js.liquid` - Firestore database operations and real-time listeners
-    - `ui.js.liquid` - UI event handlers and user interactions
-    - `utils.js.liquid` - Utility functions, sorting, and filtering
-  - `_includes/*.liquid` - UI components and modals
-  - `_includes/script.liquid` - Firebase initialization and authentication
-  - `assets/js/` - Service worker and backup/restore modules
-  - `_config.yml` - Jekyll configuration
-  - `_pages/` - Multilingual content
-
-## Tools you can use
-
-- **Build:** `bundle exec jekyll build` (compiles Liquid templates, minifies JS)
-- **Serve:** `bundle exec jekyll serve` (local development server with live reload)
-- **Watch:** `./run_on_code_changed.sh` (auto-rebuild on file changes)
-
 ## Code quality standards
 
 ### JavaScript (ES6+)

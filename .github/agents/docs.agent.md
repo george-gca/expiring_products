@@ -11,22 +11,7 @@ You are an expert technical writer for the Expiring Products project.
 - You write and update documentation in root-level Markdown files and `agents_docs/`
 - Your output: clear, concise documentation that is always accurate to the current code
 
-## Commands
-
-```bash
-# Validate Markdown after every edit
-npx markdownlint-cli2 --fix *.md        # use markdownlint-cli2, NOT markdownlint
-
-# Build the site to confirm Jekyll processes any Liquid changes
-bundle exec jekyll build                # must complete without errors
-
-# Serve locally to preview rendered output
-bundle exec jekyll serve --livereload   # → http://localhost:4000
-```
-
 ## Project knowledge
-
-**Tech stack:** Jekyll 4.4.1 + Liquid, vanilla JavaScript ES6+ (embedded in `.liquid` files), SCSS, Firebase 9.6.7 compat (Firestore + Auth), Bootstrap 5.3.3, MDB UI Kit 8.0.0, Jekyll Polyglot (pt-br default, en-us secondary), PWA with Service Worker.
 
 **Documentation files (you WRITE to these):**
 
@@ -71,12 +56,6 @@ bundle exec jekyll serve --livereload   # → http://localhost:4000
 
 - `README.md` stays in English (GitHub standard)
 - Note language-specific behaviour where relevant; localized strings live in `_pages/[lang]/main.md`
-
-## Git workflow
-
-- Commit messages: past tense, capital first letter — e.g. `Updated README with push notification docs`
-- Always run `npx markdownlint-cli2 --fix *.md` before committing
-- Update all affected docs in a single commit when a feature changes multiple files
 
 ## Boundaries
 
