@@ -20,5 +20,5 @@
   "quantity": "Quantity",
   "site_description": "A simple system to control products to expire",
   "title": "Products to expire",
-  "view_on_github": "View project on GitHub"
+  "quantity_exceeded": "Total exceeds available quantity"
 }

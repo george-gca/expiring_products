@@ -25,7 +25,10 @@ export function useItemMutations() {
   async function openItem(category: ItemCategory, id: number, quantity: number, items: Item[]) {
     const today = DateTime.now();
     const item = items.find((i) => i.id === id);
-    if (!item) return;
+    if (!item) {
+      console.warn(`openItem: item with id ${id} not found`);
+      return;
+    }
 
     const itemExpiry = DateTime.fromISO(item.expiring_date);
     let expiringDate: DateTime;
@@ -62,7 +65,10 @@ export function useItemMutations() {
 
   async function consumeItem(category: ItemCategory, id: number, quantity: number, items: Item[]) {
     const item = items.find((i) => i.id === id);
-    if (!item) return;
+    if (!item) {
+      console.warn(`consumeItem: item with id ${id} not found`);
+      return;
+    }
     if (item.quantity <= quantity) {
       await deleteItemFromDb(category, id);
     } else {
@@ -73,7 +79,10 @@ export function useItemMutations() {
 
   async function discardItem(category: ItemCategory, id: number, quantity: number, items: Item[]) {
     const item = items.find((i) => i.id === id);
-    if (!item) return;
+    if (!item) {
+      console.warn(`discardItem: item with id ${id} not found`);
+      return;
+    }
     if (item.quantity <= quantity) {
       await deleteItemFromDb(category, id);
     } else {

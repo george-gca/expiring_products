@@ -20,5 +20,6 @@
   "quantity": "Quantidade",
   "site_description": "Um sistema simples de controle de produtos a vencer",
   "title": "Produtos a vencer",
-  "view_on_github": "Visualizar projeto no GitHub"
+  "view_on_github": "Visualizar projeto no GitHub",
+  "quantity_exceeded": "Total excede a quantidade disponível"
 }

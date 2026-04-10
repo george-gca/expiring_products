@@ -41,7 +41,7 @@ export default function EditItemModal({ show, item, category, onClose }: EditIte
           </div>
           <form onSubmit={handleSubmit}>
             <div className="modal-body">
-              {invalid && <div className="alert alert-danger">Total exceeds quantity ({item.quantity})</div>}
+              {invalid && <div className="alert alert-danger">{t('quantity_exceeded')}</div>}
               <div className="mb-3">
                 <label className="form-label">{t('opened_items')}</label>
                 <div className="input-group">
