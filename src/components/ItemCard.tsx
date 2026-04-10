@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore } from '../store/settingsStore';
-import { isExpired, isExpiringSoon, toRelative } from '../utils/dateUtils';
+import { isExpired, isExpiringSoon, toRelative, appLocaleToLuxonLocale } from '../utils/dateUtils';
 import type { Item } from '../types';
 
 interface ItemCardProps {
@@ -11,9 +11,7 @@ interface ItemCardProps {
 export default function ItemCard({ item, onEdit }: ItemCardProps) {
   const { t } = useTranslation();
   const language = useSettingsStore((s) => s.language);
-  
-  // Map app locale to luxon locale
-  const luxonLocale = language === 'en-us' ? 'en-US' : 'pt-BR';
+  const luxonLocale = appLocaleToLuxonLocale(language);
   
   const expired = isExpired(item.expiring_date);
   const soon = isExpiringSoon(item.expiring_date);

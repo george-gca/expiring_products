@@ -23,9 +23,23 @@ export default function EditItemModal({ show, item, category, onClose }: EditIte
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (invalid) return;
-    if (opened > 0) await openItem(category, item.id!, opened, [item]);
-    if (consumed > 0) await consumeItem(category, item.id!, consumed, [item]);
-    if (discarded > 0) await discardItem(category, item.id!, discarded, [item]);
+
+    // Each operation may change the item's quantity in the DB, so we pass a
+    // synthetic item with the remaining quantity to avoid using stale data in
+    // successive operations within the same submission.
+    let remaining = item.quantity;
+
+    if (opened > 0) {
+      await openItem(category, item.id!, opened, [item]);
+      remaining -= opened;
+    }
+    if (consumed > 0 && remaining > 0) {
+      await consumeItem(category, item.id!, consumed, [{ ...item, quantity: remaining }]);
+      remaining -= consumed;
+    }
+    if (discarded > 0 && remaining > 0) {
+      await discardItem(category, item.id!, discarded, [{ ...item, quantity: remaining }]);
+    }
     onClose();
   }
 

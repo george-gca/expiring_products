@@ -1,4 +1,14 @@
 import { DateTime, Interval } from 'luxon';
+import type { Language } from '../store/settingsStore';
+
+/**
+ * Map an app Language value to the corresponding Luxon/BCP-47 locale string.
+ * @param language - App language setting
+ * @returns Luxon-compatible locale string
+ */
+export function appLocaleToLuxonLocale(language: Language): string {
+  return language === 'en-us' ? 'en-US' : 'pt-BR';
+}
 
 export function isExpired(isoDate: string): boolean {
   return DateTime.fromISO(isoDate) < DateTime.now();
