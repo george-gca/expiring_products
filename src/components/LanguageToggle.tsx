@@ -6,14 +6,14 @@ export default function LanguageToggle() {
   const { language, setLanguage } = useSettingsStore();
 
   function toggle() {
-    const next = language === 'en-us' ? 'pt-br' : 'en-us';
+    const next = language === 'en-US' ? 'pt-BR' : 'en-US';
     setLanguage(next);
     i18n.changeLanguage(next).catch(console.error);
   }
 
   return (
     <button className="btn btn-outline-info" onClick={toggle}>
-      {language === 'en-us' ? 'PT-BR' : 'EN-US'}
+      {language === 'en-US' ? 'PT-BR' : 'EN-US'}
     </button>
   );
 }

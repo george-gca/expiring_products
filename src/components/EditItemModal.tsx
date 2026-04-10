@@ -18,11 +18,11 @@ export default function EditItemModal({ show, item, category, onClose }: EditIte
   const [discarded, setDiscarded] = useState(0);
 
   const total = opened + consumed + discarded;
-  const invalid = total > item.quantity;
+  const exceedsAvailableQuantity = total > item.quantity;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (invalid) return;
+    if (exceedsAvailableQuantity) return;
 
     // Each operation may change the item's quantity in the DB, so we pass a
     // synthetic item with the remaining quantity to avoid using stale data in
@@ -55,7 +55,7 @@ export default function EditItemModal({ show, item, category, onClose }: EditIte
           </div>
           <form onSubmit={handleSubmit}>
             <div className="modal-body">
-              {invalid && <div className="alert alert-danger">{t('quantity_exceeded')}</div>}
+              {exceedsAvailableQuantity && <div className="alert alert-danger">{t('quantity_exceeded')}</div>}
               <div className="mb-3">
                 <label className="form-label">{t('opened_items')}</label>
                 <div className="input-group">
@@ -83,7 +83,7 @@ export default function EditItemModal({ show, item, category, onClose }: EditIte
             </div>
             <div className="modal-footer">
               <button type="button" className="btn btn-secondary" onClick={onClose}>{t('close')}</button>
-              <button type="submit" className="btn btn-primary" disabled={invalid}>{t('edit')}</button>
+              <button type="submit" className="btn btn-primary" disabled={exceedsAvailableQuantity}>{t('edit')}</button>
             </div>
           </form>
         </div>

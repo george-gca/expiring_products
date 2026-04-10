@@ -18,7 +18,7 @@ vi.mock('../../store/itemsStore', () => ({
 
 vi.mock('../../store/settingsStore', () => ({
   useSettingsStore: (selector?: (s: { language: string; setLanguage: () => void }) => unknown) => {
-    const state = { language: 'en-us', setLanguage: vi.fn() };
+    const state = { language: 'en-US', setLanguage: vi.fn() };
     return selector ? selector(state) : state;
   },
 }));

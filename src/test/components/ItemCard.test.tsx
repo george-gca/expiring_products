@@ -17,7 +17,7 @@ vi.mock('react-i18next', () => ({
 // Mock settingsStore
 vi.mock('../../store/settingsStore', () => ({
   useSettingsStore: (selector: (s: { language: string }) => unknown) =>
-    selector({ language: 'en-us' }),
+    selector({ language: 'en-US' }),
 }));
 
 const baseItem: Item = {

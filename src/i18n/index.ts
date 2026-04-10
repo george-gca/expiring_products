@@ -8,12 +8,14 @@ const language = useSettingsStore.getState().language;
 
 i18n.use(initReactI18next).init({
   resources: {
-    'en-us': { translation: enUs },
-    'pt-br': { translation: ptBr },
+    'en-US': { translation: enUs },
+    'pt-BR': { translation: ptBr },
   },
   lng: language,
-  fallbackLng: 'pt-br',
+  fallbackLng: 'pt-BR',
+  load: 'currentOnly',
   interpolation: { escapeValue: false },
+  initImmediate: false,
 });
 
 export default i18n;

@@ -7,7 +7,7 @@ import type { Language } from '../store/settingsStore';
  * @returns Luxon-compatible locale string
  */
 export function appLocaleToLuxonLocale(language: Language): string {
-  return language === 'en-us' ? 'en-US' : 'pt-BR';
+  return language === 'en-US' ? 'en-US' : 'pt-BR';
 }
 
 export function isExpired(isoDate: string): boolean {

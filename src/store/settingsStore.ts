@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type Language = 'en-us' | 'pt-br';
+export type Language = 'en-US' | 'pt-BR';
 
 interface SettingsState {
   language: Language;
@@ -11,7 +11,7 @@ interface SettingsState {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      language: 'pt-br',
+      language: 'pt-BR',
       setLanguage: (language) => set({ language }),
     }),
     { name: 'expiring-products-settings' }
