@@ -7,6 +7,13 @@ const DB_VERSION = 1;
 
 let dbPromise: ReturnType<typeof openDB<ExpiringProductsDB>> | null = null;
 
+/**
+ * Returns the singleton IDB connection, opening it on first call.
+ *
+ * The module-level singleton avoids redundant `openDB` calls across renders.
+ * In tests this module is replaced wholesale by the in-memory mock at
+ * `src/test/mocks/db.ts` via `vi.mock`, so the singleton never runs there.
+ */
 export function getDb() {
   if (!dbPromise) {
     dbPromise = openDB<ExpiringProductsDB>(DB_NAME, DB_VERSION, {
