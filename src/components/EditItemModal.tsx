@@ -10,6 +10,11 @@ interface EditItemModalProps {
   onClose: () => void;
 }
 
+const inputCls =
+  'w-16 text-center rounded-md border border-slate-600 bg-slate-700 text-slate-100 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent';
+const stepperBtnCls =
+  'px-3 py-2 rounded-md bg-slate-600 hover:bg-slate-500 text-slate-200 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400';
+
 export default function EditItemModal({ show, item, category, onClose }: EditItemModalProps) {
   const { t } = useTranslation();
   const { openItem, consumeItem, discardItem } = useItemMutations();
@@ -46,47 +51,100 @@ export default function EditItemModal({ show, item, category, onClose }: EditIte
   if (!show) return null;
 
   return (
-    <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-      <div className="modal-dialog">
-        <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title">{item.name}</h5>
-            <button type="button" className="btn-close" onClick={onClose} aria-label={t('close')} />
-          </div>
-          <form onSubmit={handleSubmit}>
-            <div className="modal-body">
-              {exceedsAvailableQuantity && <div className="alert alert-danger">{t('quantity_exceeded')}</div>}
-              <div className="mb-3">
-                <label className="form-label">{t('opened_items')}</label>
-                <div className="input-group">
-                  <button type="button" className="btn btn-outline-secondary" onClick={() => setOpened(Math.max(0, opened - 1))}>-</button>
-                  <input type="number" className="form-control text-center" min={0} value={opened} onChange={(e) => setOpened(Number(e.target.value))} />
-                  <button type="button" className="btn btn-outline-secondary" onClick={() => setOpened(opened + 1)}>+</button>
-                </div>
-              </div>
-              <div className="mb-3">
-                <label className="form-label">{t('consumed_items')}</label>
-                <div className="input-group">
-                  <button type="button" className="btn btn-outline-secondary" onClick={() => setConsumed(Math.max(0, consumed - 1))}>-</button>
-                  <input type="number" className="form-control text-center" min={0} value={consumed} onChange={(e) => setConsumed(Number(e.target.value))} />
-                  <button type="button" className="btn btn-outline-secondary" onClick={() => setConsumed(consumed + 1)}>+</button>
-                </div>
-              </div>
-              <div className="mb-3">
-                <label className="form-label">{t('discarded_items')}</label>
-                <div className="input-group">
-                  <button type="button" className="btn btn-outline-secondary" onClick={() => setDiscarded(Math.max(0, discarded - 1))}>-</button>
-                  <input type="number" className="form-control text-center" min={0} value={discarded} onChange={(e) => setDiscarded(Number(e.target.value))} />
-                  <button type="button" className="btn btn-outline-secondary" onClick={() => setDiscarded(discarded + 1)}>+</button>
-                </div>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button type="button" className="btn btn-secondary" onClick={onClose}>{t('close')}</button>
-              <button type="submit" className="btn btn-primary" disabled={exceedsAvailableQuantity}>{t('edit')}</button>
-            </div>
-          </form>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="relative w-full max-w-md bg-slate-800 rounded-xl shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
+          <h5 className="text-base font-semibold text-slate-100">{item.name}</h5>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t('close')}
+            className="text-slate-400 hover:text-slate-100 transition-colors text-xl leading-none"
+          >
+            ×
+          </button>
         </div>
+
+        <form onSubmit={handleSubmit}>
+          {/* Body */}
+          <div className="px-5 py-4 space-y-4">
+            {exceedsAvailableQuantity && (
+              <div className="rounded-md bg-red-900/50 border border-red-500 text-red-200 px-4 py-3 text-sm">
+                {t('quantity_exceeded')}
+              </div>
+            )}
+
+            {/* Opened stepper */}
+            <div>
+              <label className="block mb-2 text-sm font-medium text-slate-300">{t('opened_items')}</label>
+              <div className="flex items-center gap-2">
+                <button type="button" className={stepperBtnCls} onClick={() => setOpened(Math.max(0, opened - 1))}>−</button>
+                <input
+                  type="number"
+                  min={0}
+                  value={opened}
+                  onChange={(e) => setOpened(Number(e.target.value))}
+                  className={inputCls}
+                />
+                <button type="button" className={stepperBtnCls} onClick={() => setOpened(opened + 1)}>+</button>
+              </div>
+            </div>
+
+            {/* Consumed stepper */}
+            <div>
+              <label className="block mb-2 text-sm font-medium text-slate-300">{t('consumed_items')}</label>
+              <div className="flex items-center gap-2">
+                <button type="button" className={stepperBtnCls} onClick={() => setConsumed(Math.max(0, consumed - 1))}>−</button>
+                <input
+                  type="number"
+                  min={0}
+                  value={consumed}
+                  onChange={(e) => setConsumed(Number(e.target.value))}
+                  className={inputCls}
+                />
+                <button type="button" className={stepperBtnCls} onClick={() => setConsumed(consumed + 1)}>+</button>
+              </div>
+            </div>
+
+            {/* Discarded stepper */}
+            <div>
+              <label className="block mb-2 text-sm font-medium text-slate-300">{t('discarded_items')}</label>
+              <div className="flex items-center gap-2">
+                <button type="button" className={stepperBtnCls} onClick={() => setDiscarded(Math.max(0, discarded - 1))}>−</button>
+                <input
+                  type="number"
+                  min={0}
+                  value={discarded}
+                  onChange={(e) => setDiscarded(Number(e.target.value))}
+                  className={inputCls}
+                />
+                <button type="button" className={stepperBtnCls} onClick={() => setDiscarded(discarded + 1)}>+</button>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="flex justify-end gap-2 px-5 py-4 border-t border-slate-700">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-md text-sm font-medium text-slate-300 bg-slate-700 hover:bg-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500"
+            >
+              {t('close')}
+            </button>
+            <button
+              type="submit"
+              disabled={exceedsAvailableQuantity}
+              className="px-4 py-2 rounded-md text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500"
+            >
+              {t('edit')}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

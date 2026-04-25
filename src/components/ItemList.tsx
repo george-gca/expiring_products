@@ -13,11 +13,11 @@ export default function ItemList({ items, onEdit }: ItemListProps) {
   const sorted = sortItems(items);
 
   if (sorted.length === 0) {
-    return <p className="text-muted">{t('no_items')}</p>;
+    return <p className="text-slate-400 text-center py-8">{t('no_items')}</p>;
   }
 
   return (
-    <div className="list-group">
+    <div className="divide-y divide-slate-700 rounded-lg overflow-hidden border border-slate-700">
       {sorted.map((item) => (
         <ItemCard key={item.id} item={item} onEdit={onEdit} />
       ))}

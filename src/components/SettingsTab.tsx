@@ -30,23 +30,26 @@ export default function SettingsTab() {
 
   return (
     <div>
-      <h5>{t('options')}</h5>
-      <div className="d-flex flex-column gap-3 mt-3">
-        <button className="btn btn-outline-primary" onClick={handleExport}>
+      <h5 className="text-lg font-semibold mb-4 text-slate-100">{t('options')}</h5>
+      <div className="flex flex-col gap-3">
+        <button
+          onClick={handleExport}
+          className="px-4 py-2 rounded-md text-sm font-medium border border-violet-500 text-violet-300 hover:bg-violet-900/30 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500"
+        >
           {t('export_data')}
         </button>
-        <div>
-          <label className="btn btn-outline-secondary">
-            {t('import_data')}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              className="d-none"
-              onChange={handleImport}
-            />
-          </label>
-        </div>
+
+        <label className="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium border border-slate-500 text-slate-300 hover:bg-slate-700 transition-colors cursor-pointer focus-within:ring-2 focus-within:ring-slate-400">
+          {t('import_data')}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            className="sr-only"
+            onChange={handleImport}
+          />
+        </label>
+
         <LanguageToggle />
       </div>
     </div>

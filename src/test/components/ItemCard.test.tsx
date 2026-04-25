@@ -49,7 +49,7 @@ describe('ItemCard', () => {
     };
     const onEdit = vi.fn();
     const { container } = render(<ItemCard item={expiredItem} onEdit={onEdit} />);
-    expect(container.firstChild).toHaveClass('list-group-item-danger');
+    expect(container.firstChild).toHaveClass('border-red-500');
   });
 
   it('applies warning class when expiring within 3 days', () => {
@@ -59,14 +59,14 @@ describe('ItemCard', () => {
     };
     const onEdit = vi.fn();
     const { container } = render(<ItemCard item={soonItem} onEdit={onEdit} />);
-    expect(container.firstChild).toHaveClass('list-group-item-warning');
+    expect(container.firstChild).toHaveClass('border-amber-500');
   });
 
   it('has no danger/warning class when not expiring soon', () => {
     const onEdit = vi.fn();
     const { container } = render(<ItemCard item={baseItem} onEdit={onEdit} />);
-    expect(container.firstChild).not.toHaveClass('list-group-item-danger');
-    expect(container.firstChild).not.toHaveClass('list-group-item-warning');
+    expect(container.firstChild).not.toHaveClass('border-red-500');
+    expect(container.firstChild).not.toHaveClass('border-amber-500');
   });
 
   it('calls onEdit when clicked', () => {
